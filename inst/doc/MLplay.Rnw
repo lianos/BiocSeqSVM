@@ -1,0 +1,188 @@
+%\VignetteIndexEntry{Maching learning from NGS data}
+%\VignetteKeywords{tutorial}
+%\VignettePackage{MLplay}
+\documentclass[11pt]{article}
+
+\usepackage{url}
+\usepackage{colortbl}
+\usepackage{amsmath}
+\usepackage[pdftex]{graphicx}
+\usepackage{color}
+\usepackage{xspace}
+\usepackage{fancyvrb}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{booktabs} 
+\usepackage{longtable} 
+\usepackage[boxed, linesnumbered]{algorithm2e}
+\usepackage[
+         colorlinks=true,
+         linkcolor=blue,
+         citecolor=blue,
+         urlcolor=blue]
+         {hyperref}
+\usepackage{lscape}
+
+\usepackage{Sweave}
+\SweaveOpts{keep.source=TRUE}
+
+% define new colors for use
+\definecolor{darkgreen}{rgb}{0,0.6,0}
+\definecolor{darkred}{rgb}{0.6,0.0,0}
+\definecolor{lightbrown}{rgb}{1,0.9,0.8}
+\definecolor{brown}{rgb}{0.6,0.3,0.3}
+\definecolor{darkblue}{rgb}{0,0,0.8}
+\definecolor{darkmagenta}{rgb}{0.5,0,0.5}
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rfunarg}[1]{{\texttt{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+\newcommand{\software}[1]{\textsf{#1}}
+\newcommand{\R}{\software{R}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\pagestyle{fancy}
+\lhead{}
+\chead{Machine Learning and NGS data}
+\rhead{}
+\lfoot{}
+\cfoot{}
+\rfoot{\thepage\ of \pageref{LastPage}}
+\renewcommand{\headrulewidth}{1pt}
+\renewcommand{\footrulewidth}{1pt}
+
+\title{Machine learning from NGS data}
+\author{Steve Lianoglou \\ slianoglou@gmail.com}
+
+\begin{document}
+
+\maketitle
+\renewcommand{\baselinestretch}{.6}
+
+\tableofcontents
+
+\thispagestyle{empty}
+	
+\vspace{.2in}
+
+\renewcommand{\baselinestretch}{1}
+
+<<loadLibs, results = hide, echo = FALSE>>=
+#library(GenomicRanges)
+#library(caret)
+#library(sg)
+#library(pasilla)
+#library(BSgenome.Dmelanogaster.UCSC.dm3)
+#library(BSgenome.Mmusculus.UCSC.mm9)
+@
+
+The goal of this tutorial is to explore how some machine learning techniques,
+particularly support vector machines and string kernels, can be used
+with next generation sequencing data in order to have fun with biology. We will
+be using different types of sequencing data (RNA-seq and HITS-CLIP) in order to
+model the ``preferred binding landscape'' of an RNA binding protein
+(pasilla/NOVA) and see if this landscape is conserved among evolutionary
+distant eukaryotes (fruit fly and mouse).
+
+\section{Motivation} % (fold)
+\label{sec:motivation}
+The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
+% section motivation (end)
+
+\section{Support Vector Machines} % (fold)
+\label{sec:support_vector_machines}
+
+Support vector machines (SVMs) (cite vapnik) ...
+
+\subsection{String Kernels} % (fold)
+\label{sub:string_kernels}
+
+There are different ways to measure distance/similarity between strings.
+
+\subsubsection{Spectrum Kernel} % (fold)
+\label{ssub:spectrum_kernel}
+Cite Christina
+
+\begin{equation}
+  k(x,x') = \sum_{u \in \Sigma^d} N(u, x) N(u, x')
+\end{equation}
+
+where $N(u,x)$ is the function that returns the number of occurrences of kmer $u$ in the string $x$.
+
+% subsubsection spectrum_kernel (end)
+
+\subsubsection{Weighted Degree Kernel} % (fold)
+\label{ssub:weighted_degree_kernel}
+Cite Gunnar
+
+\begin{equation}
+  k(x,x') = \sum_{k=1}^d \beta_k \sum_{i=1}^{l-k+1} \hbox{I}(u_{k,i}(x) = u_{k,i}(x'))
+\end{equation}
+% subsubsection weighted_degree_kernel (end)
+
+\subsubsection{Weighted Degree Kernel with Shifts} % (fold)
+\label{ssub:weighted_degree_kernel_with_shifts}
+Cite Gunnar
+% subsubsection weighted_degree_kernel_with_shifts (end)
+
+% subsection string_kernels (end)
+
+% section support_vector_machines (end)
+
+\section{Learning preferred binding sites} % (fold)
+\label{sec:learning_preferred_binding_sites}
+
+\subsection{Feature selection} % (fold)
+\label{sub:feature_selection}
+
+% subsection feature_selection (end)
+
+\subsection{Training} % (fold)
+\label{sub:training}
+
+% subsection training (end)
+
+\subsection{Testing} % (fold)
+\label{sub:testing}
+
+% subsection testing (end)
+% section learning_preferred_binding_sites (end)
+
+
+\section{Applying model on novel organism} % (fold)
+\label{sec:applying_model_on_novel_organism}
+
+% section applying_model_on_novel_organism (end)
+
+\section{Unsupervised learning with Nonnegative Matrix Factorization} % (fold)
+\label{sec:unsupervised_learning_with_nonnegative_matrix_factorization}
+Non-negative matrix factorization
+% section unsupervised_learning_with_nonnegative_matrix_factorization (end)
+
+\section{Future things to explore} % (fold)
+\label{sec:future}
+Novel Machine Learning Methods for MHC Class I Binding Prediction
+http://www.fml.tuebingen.mpg.de/raetsch/members/raetsch/bibliography/WTAKR2010
+http://www.fml.tuebingen.mpg.de/raetsch/lectures/talk-multitask-recomb2010.pdf
+% section  (end)
+
+\section{Acknowledgements} % (fold)
+\label{sec:acknowledgements}
+Christina Leslie, Raphael Pelessof, Gunnar Raetsch, Chris Widmer
+% section acknowledgements (end)
+
+
+\bibliography{MLplay}
+\bibliographystyle{plain}
+
+
+\section{Session Information}
+<<sessionInfo>>=
+sessionInfo()
+@ 
+
+\end{document}

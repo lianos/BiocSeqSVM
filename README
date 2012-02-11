@@ -1,0 +1,13 @@
+This package serves as a quick introduction to the application of some
+machine learning concepts to next generation sequencing data.
+
+It was initially prepared for the tutorial I will be presenting at the
+Advanced R/Bioconductor Workshop on High-Throughput Genetic Analysis, 2012:
+
+    https://secure.bioconductor.org/SeattleFeb12/
+
+The content of this package is released under the Creative Commons
+Attribution-ShareAlike (v3.0) license:
+
+    http://creativecommons.org/licenses/by-sa/3.0/
+
