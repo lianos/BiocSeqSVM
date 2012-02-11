@@ -3,9 +3,10 @@ Version: 0.1-2012
 Title: Pedagogical machine learning exercises for NGS data
 Author: Steve Lianoglou
 Maintainer: Steve Lianoglou <slianoglou@gmail.com>
-Depends: sg, caret, pasilla
+Description: Pedagogical machine learning exercises for NGS data
+Depends: sg, kernlab, caret, pasilla
+LazyLoad: Yes
 Imports: methods, data.table
 Suggests: testthat, roxygen2
-Description: Pedagogical machine learning exercises for NGS data
 License: CC BY-SA (v3.0)
 URL: http://github.com/lianos/MLplay

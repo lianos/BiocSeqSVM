@@ -61,6 +61,15 @@
 \begin{document}
 
 \maketitle
+
+The goal of this tutorial is to explore how some machine learning techniques,
+particularly support vector machines and string kernels, can be used
+with next generation sequencing data in order to have fun with biology. We will
+be using different types of sequencing data (RNA-seq and HITS-CLIP) in order to
+model the ``preferred binding landscape'' of an RNA binding protein
+(pasilla/NOVA) and see if this landscape is conserved among evolutionary
+distant eukaryotes (fruit fly and mouse).
+
 \renewcommand{\baselinestretch}{.6}
 
 \tableofcontents
@@ -80,29 +89,29 @@
 #library(BSgenome.Mmusculus.UCSC.mm9)
 @
 
-The goal of this tutorial is to explore how some machine learning techniques,
-particularly support vector machines and string kernels, can be used
-with next generation sequencing data in order to have fun with biology. We will
-be using different types of sequencing data (RNA-seq and HITS-CLIP) in order to
-model the ``preferred binding landscape'' of an RNA binding protein
-(pasilla/NOVA) and see if this landscape is conserved among evolutionary
-distant eukaryotes (fruit fly and mouse).
-
-\section{Motivation} % (fold)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Motivation
+\section{Motivation}
 \label{sec:motivation}
 The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
-% section motivation (end)
 
-\section{Support Vector Machines} % (fold)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Support vector machines
+\section{Support Vector Machines}
 \label{sec:support_vector_machines}
 
 Support vector machines (SVMs) (cite vapnik) ...
 
+%% ============================================================================
+%% String Kernels
 \subsection{String Kernels} % (fold)
 \label{sub:string_kernels}
 
 There are different ways to measure distance/similarity between strings.
 
+%% ----------------------------------------------------------------------------
+%% Spectrum Kernel
 \subsubsection{Spectrum Kernel} % (fold)
 \label{ssub:spectrum_kernel}
 Cite Christina
@@ -113,67 +122,110 @@ Cite Christina
 
 where $N(u,x)$ is the function that returns the number of occurrences of kmer $u$ in the string $x$.
 
-% subsubsection spectrum_kernel (end)
-
-\subsubsection{Weighted Degree Kernel} % (fold)
+%% ----------------------------------------------------------------------------
+%% Weighted Degree Kernel
+\subsubsection{Weighted Degree Kernel}
 \label{ssub:weighted_degree_kernel}
-Cite Gunnar
+
+The \emph{weighted degree} (WD) kernel computes similarities between
+sequences while taking positional information into account. The WD kernel
+counts the exact co-occurrences of \emph{k}-mers at corresponding positions
+of the two sequences being compared.
+
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[scale=1]{figs/weighted-degree-kernel}
+  \caption{
+    Given two sequences $x_1$ and $x_2$ of equal length, the kernel
+    computes a weighted sum of matching subsequences. Each matching
+    subsequence makes a contribution $w_B$ depending on its length $B$,
+    where longer matches contribute more significantly.}
+  \label{fig:WDK}
+\end{figure}
 
 \begin{equation}
   k(x,x') = \sum_{k=1}^d \beta_k \sum_{i=1}^{l-k+1} \hbox{I}(u_{k,i}(x) = u_{k,i}(x'))
 \end{equation}
-% subsubsection weighted_degree_kernel (end)
 
-\subsubsection{Weighted Degree Kernel with Shifts} % (fold)
+
+%% ----------------------------------------------------------------------------
+%% Weighted Degree Kernel with Shifts
+\subsubsection{Weighted Degree Kernel with Shifts}
 \label{ssub:weighted_degree_kernel_with_shifts}
-Cite Gunnar
-% subsubsection weighted_degree_kernel_with_shifts (end)
 
-% subsection string_kernels (end)
+The weighted degree kernel with shifts (the WDS kernel) shifts the two
+sequences against each other in order to allow for small positional variations
+of sequence motifs. It is conceptually a combination of the spectrum and WD
+kernels.
 
-% section support_vector_machines (end)
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[scale=1]{figs/weighted-degree-kernel-with-shifts}
+  \caption{
+    Given two sequences $x_1$ and $x_2$ of equal length, the WDS kernel produces
+    a weighted sum to which each match in the sequences makes a contribution
+    $\gamma_{k,p}$ depending on its length $k$ and relative position $p$, where
+    longer matches at the same position contribute more significantly.
+  }
+  \label{fig:WDKS}
+\end{figure}
 
-\section{Learning preferred binding sites} % (fold)
-\label{sec:learning_preferred_binding_sites}
 
-\subsection{Feature selection} % (fold)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Learning preferred binding landscapes
+\section{Learning preferred binding landscapes}
+\label{sec:learning_preferred_binding_landscapes}
+
+
+%% ============================================================================
+%% Feature selection
+\subsection{Feature selection}
 \label{sub:feature_selection}
 
-% subsection feature_selection (end)
 
-\subsection{Training} % (fold)
+%% ============================================================================
+%% Training
+\subsection{Training}
 \label{sub:training}
 
-% subsection training (end)
 
-\subsection{Testing} % (fold)
+
+%% ============================================================================
+%% Testing
+\subsection{Testing}
 \label{sub:testing}
 
-% subsection testing (end)
-% section learning_preferred_binding_sites (end)
 
 
-\section{Applying model on novel organism} % (fold)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Applying model on novel organism
+\section{Applying model on novel organism}
 \label{sec:applying_model_on_novel_organism}
 
-% section applying_model_on_novel_organism (end)
 
-\section{Unsupervised learning with Nonnegative Matrix Factorization} % (fold)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Unsupervised learning with NFM
+\section{Unsupervised learning with Nonnegative Matrix Factorization}
 \label{sec:unsupervised_learning_with_nonnegative_matrix_factorization}
 Non-negative matrix factorization
-% section unsupervised_learning_with_nonnegative_matrix_factorization (end)
 
-\section{Future things to explore} % (fold)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Future things to explore
+\section{Future things to explore}
 \label{sec:future}
 Novel Machine Learning Methods for MHC Class I Binding Prediction
 http://www.fml.tuebingen.mpg.de/raetsch/members/raetsch/bibliography/WTAKR2010
 http://www.fml.tuebingen.mpg.de/raetsch/lectures/talk-multitask-recomb2010.pdf
-% section  (end)
 
-\section{Acknowledgements} % (fold)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Acknowledgements
+\section{Acknowledgements}
 \label{sec:acknowledgements}
 Christina Leslie, Raphael Pelessof, Gunnar Raetsch, Chris Widmer
-% section acknowledgements (end)
 
 
 \bibliography{MLplay}
