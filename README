@@ -1,5 +1,6 @@
 This package serves as a quick introduction to the application of some
-machine learning concepts to next generation sequencing data.
+machine learning concepts to next generation sequencing data, which you will
+find outlined in the MLplay vignette.
 
 I initially put this together for one of the tutorials to be presented at
 the Advanced R/Bioconductor Workshop on High-Throughput Genetic Analysis,
@@ -7,8 +8,8 @@ the Advanced R/Bioconductor Workshop on High-Throughput Genetic Analysis,
 
     https://secure.bioconductor.org/SeattleFeb12/
 
-The content of this package is released under the Creative Commons
-Attribution-ShareAlike (v3.0) license:
+Accept where otherwise noted, the contents of this package are released under
+the Creative Commons Attribution-ShareAlike (v3.0) license:
 
     http://creativecommons.org/licenses/by-sa/3.0/
 
