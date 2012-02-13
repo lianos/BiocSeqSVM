@@ -42,21 +42,30 @@ if (FALSE) {
   vals
 }
 
-.parseGroup <- function(group, sep=";", N=50) {
-  ##############################################################################
-  ## Figure out number of columns
-  n.cols <- sapply(gregexpr(sep, head(group, N)), length)
-  max.n <- max(n.cols)
-  info <- strsplit(group, sep, fixed=TRUE)
+##' Parses the 'group' column in a gff/gtf file into a data.frame
+##'
+##' This function assumes that the group entry is like so:
+##'
+##'   attrib1 "value"; attrib2 "value"; attrib3 "value"; ...
+##'
+##' @param group The "group" column from a GFF/GTF file
+##' @param group The separator used two separate attributes
+##' @param N The number of lines to read from the head of the GFF to guess the
+##' max number of columns the output data.frame will have.
+.parseGroup <- function(group, sep=";", N=100) {
+  n <- sapply(gregexpr(sep, head(group, N)), length)
+  N.cols <- max(n)
 
-  max.parse <- .parseGroupLineList(info[[max.n]])
-  ans <- lapply(max.parse, function(x) character(length(info)))
-  var.names <- names(max.parse)
-  names(ans) <- var.names
+  group <- strsplit(group, sep, fixed=TRUE)
+  example <- .parseGroupLineList(group[[which(n == N.cols)[1L]]])
+  var.names <- names(example)
 
-  for (i in 1:length(info)) {
-    this <- .parseGroupLineList(info[[i]])
-    for (name in var.names) {
+  ans <- lapply(example, function(x) character(length(info)))
+
+  for (i in 1:length(group)) {
+    this <- .parseGroupLineList(group[[i]])
+    use <- names(this)[names(this) %in% var.names]
+    for (name in use) {
       ans[[name]][i] <- this[[name]]
     }
   }
@@ -71,21 +80,14 @@ makeTranscriptDbFromGFF <- function(gff, version=c("1", "2", "3"),
     stop("Unable to read file: ", gff)
   }
   version <- match.arg(version)
+
+  ## import.gff column renaming (version 1?):
+  ##   feature -> type
+  ##   frame -> phase
   annos <- import.gff(gff, version, genome)
 
   for (chr in names(annos)) {
     a <- as(annos[chr], "GRanges")
-    meta.list <- strsplit(values(a)$group, ";", fixed=TRUE)
-
-    #############################################################
-    ## Figure out number of columns
-
-    parsed <- lapply(meta.list, function(x) {
-      x <- strsplit(x, "\\s", perl=TRUE)
-      x <- lapply(x, function(xx) xx[nchar(xx) > 0])
-      vals <- lapply(x, function(xx) gsub("'", "", gsub('"', "", xx[[2L]])))
-      names(vals) <- sapply(x, '[[', 1L)
-      as.data.frame(vals)
-    })
+    group <- .parseGroup(values(a)$group)
   }
 }
