@@ -60,7 +60,7 @@ if (FALSE) {
   example <- .parseGroupLineList(group[[which(n == N.cols)[1L]]])
   var.names <- names(example)
 
-  ans <- lapply(example, function(x) character(length(info)))
+  ans <- lapply(example, function(x) character(length(x)))
 
   for (i in 1:length(group)) {
     this <- .parseGroupLineList(group[[i]])

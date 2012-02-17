@@ -1,1 +1,4 @@
 import(methods)
+import(data.table)
+import(GenomicRanges)
+import(Biostrings)

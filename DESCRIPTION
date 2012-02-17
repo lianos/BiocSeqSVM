@@ -4,9 +4,10 @@ Title: Pedagogical machine learning exercises for NGS data
 Author: Steve Lianoglou
 Maintainer: Steve Lianoglou <slianoglou@gmail.com>
 Description: Pedagogical machine learning exercises for NGS data
-Depends: sg, kernlab, caret, pasilla
+Depends: sg, kernlab, caret, pasilla, Biostrings,
+    BSgenome.Dmelanogaster.UCSC.dm3, BSgenome.Mmusculus.UCSC.mm9
 LazyLoad: Yes
-Imports: methods, data.table
-Suggests: testthat, roxygen2
+Imports: methods, data.table, GenomicRanges
+Suggests: testthat, roxygen2, org.Dm.eg.db, org.Mm.eg.db
 License: CC BY-SA (v3.0)
 URL: http://github.com/lianos/MLplay
