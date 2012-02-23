@@ -36,47 +36,20 @@ parseFlattenedGFF <- function(efile, as.data.table=FALSE) {
   run.on.rev <- c(FALSE, run.on.rev)
   exons$run.on <- run.on.fwd | run.on.rev
 
-  setkeyv(exons, c("seqnames", "strand", "gene_id", "bin"))
+
 
   if (!as.data.table) {
     exons <- as.data.frame(exons)
+  } else {
+    setkeyv(exons, c("seqnames", "strand", "gene_id", "bin"))
   }
 
   exons
 }
 
+## Setup external
 if (FALSE) {
-  dm.exons <- parseFlattenedGFF(as.data.table=FALSE)
-  save(dm.exons, file='../inst/extdata/Dmel.DEXSeq.exons.rda')
-
-
-  ## Parse the pasilla flattened annotations
-  afile <-
-  groups <- values(dm.exons)$group
-  dm.group <-
-  values(dm.exons)$source <- NULL
-  values(dm.exons)$group <- NULL
-  values(dm.exons) <- cbind(values(dm.exons), DataFrame(dm.group))
-
-  exons <- subset(as.data.frame(dm.exons), type == "exonic_part")
-
-
-  gb <- exons[, list(seqnames=seqnames[1L], start=min(start),
-                     end=max(end), strand=strand[1L]),
-              by=gene_id]
-  gb <- transform(gb, width=end - start + 1L)
-  gbounds <- subset(as.data.frame(dm.exons), type == "aggregate_gene")
-  gbounds <- data.table(gbounds, key="gene_id")
 }
-library(pasilla)
 
-## pasillaGenes has count data for all genes
-data(pasillaGenes)
-
-## pasillaExons has count data for
-data(pasillaExons)
-
-gcounts <- counts(pasillaGenes)
-ecounts <- counts(pasillaExons)
 
 

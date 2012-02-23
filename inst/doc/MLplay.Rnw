@@ -23,6 +23,31 @@
          {hyperref}
 \usepackage{lscape}
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Try to make things look purty
+%% I like to use the fullpage!
+\usepackage{fullpage}
+
+%% Do not indent paragraphs
+\usepackage[parfill]{parskip}
+
+%% And fonts!
+% For bold and small caps together
+% http://stackoverflow.com/questions/699371/latex-small-caps-and-bold-face
+\usepackage[T1]{fontenc}
+
+%% Use Helvetica
+\usepackage{times}
+\usepackage[scaled=1]{helvet}     % PostScript font Helvetica for sans serif
+\renewcommand{\rmdefault}{phv}    % Helvetica for roman type as well as sf
+\renewcommand{\sfdefault}{phv}    % Helvetica for roman type as well as sf
+
+% Inconsolata for monospaced fonts
+% (fortunately this is distributed with the TeX-live distribution)
+\usepackage{inconsolata}
+
+%% End: Purty -----------------------------------------------------------------
+
 \usepackage{Sweave}
 \SweaveOpts{keep.source=TRUE}
 
@@ -44,21 +69,37 @@
 \newcommand{\software}[1]{\textsf{#1}}
 \newcommand{\R}{\software{R}}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \pagestyle{fancy}
-\lhead{}
-\chead{Machine Learning and NGS data}
-\rhead{}
-\lfoot{}
-\cfoot{}
-\rfoot{\thepage\ of \pageref{LastPage}}
-\renewcommand{\headrulewidth}{1pt}
-\renewcommand{\footrulewidth}{1pt}
 
-\title{Machine learning from NGS data}
-\author{Steve Lianoglou \\ slianoglou@gmail.com}
+%% Either
+% \lhead{}
+% \chead{Machine Learning and NGS data}
+% \rhead{}
+% \lfoot{}
+% \cfoot{}
+% \rfoot{\thepage\ of \pageref{LastPage}}
+% \renewcommand{\headrulewidth}{1pt}
+% \renewcommand{\footrulewidth}{1pt}
+
+%% Or
+\fancyhead[RO,RE]{\slshape \leftmark}
+% Using fancy headers sometimes lets figures, etc. bleed into the header, this
+% trick has fixed it for me in the past
+\setlength\headsep{25pt}
+
+\title{Exploring the preferred binding landscape of an RNA binding protein using high throughput sequencing data and machine learning}
+
+\author{
+  Steve Lianoglou \\
+  Memorial Sloan-Kettering Cancer Center \\
+  \small{\texttt{lianos@cbio.mskcc.org}}
+}
 
 \begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Title page
 
 \maketitle
 
@@ -95,6 +136,28 @@ distant eukaryotes (fruit fly and mouse).
 \label{sec:motivation}
 The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
 
+
+%% ============================================================================
+%% Caveat emptor
+\subsection{Caveat emptor}
+\label{sub:caveat_emptor}
+This tutorial is not meant to serve as a general purpose introduction to
+machine learning concepts. Other tutorials are available that you can find online
+that can serve this purpose. In particular, the ML lab and slides prepared by
+Vincent Carey for the
+\href{http://www.bioconductor.org/help/course-materials/2011/CSAMA/}{CSAMA 2011 workshop}
+are worth exploring.
+
+We will be taking a deep dive into exploring how we can combine the types of high-resolution
+data that different sequencing approaches provide with support vector machines (SVMs) to dig
+around in the biology outlined in the motivation section above. Our goal is not to build a
+100\% perfectly accurate classifier (although that would be nice!). We are more interested in
+understanding something a bit more about biology using our machine learning models. We will
+partially be relying on the functionality found in the Shogun machine learning toolbox, which is a
+library written in \texttt{C++} with binding to several languages~\cite{Sonnenburg:2010tr}. The
+downside to using Shogun from \texttt{R} is that it is not installable from \texttt{CRAN} and you
+will find that its language bindings are highly un-idiomatic \texttt{R} style.
+% subsection caveat_emptor
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Support vector machines

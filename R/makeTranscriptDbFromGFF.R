@@ -70,7 +70,7 @@ if (FALSE) {
     }
   }
 
-  as.data.frame(ans)
+  as.data.frame(ans, stringsAsFactors=FALSE)
 }
 
 makeTranscriptDbFromGFF <- function(gff, version=c("1", "2", "3"),

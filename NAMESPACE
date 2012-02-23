@@ -2,3 +2,14 @@ import(methods)
 import(data.table)
 import(GenomicRanges)
 import(Biostrings)
+import(kernlab)
+import(sg)
+
+export(
+       predict,
+       SpectrumFeatures,
+       ksvm
+       )
+
+
+
