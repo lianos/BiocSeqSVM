@@ -18,12 +18,16 @@ meshgrid <- function(a,b) {
 showSVM <- function(X, y, kernel='linear', C=1, ...) {
   model <- SVM(X, y, kernel=kernel, C=C, ...)
 
-  browser()
   ## Get a grid of points to draw decision values over
-  ## x1 <- (-49:50) / 10
-  ## x2 <- (-49:50) / 10
-  x1 <- seq(-5, 5, length.out=100)
-  x2 <- x1
+  ## x1 <- x2 <- seq(-5, 5, length.out=100)
+
+  xlim <- c(min(X[,1] - 1), max(X[,1] + 1))
+  ylim <- c(min(X[,2] - 1), max(X[,2] + 1))
+
+  xrange <- range(X)
+  x1 <- seq(xlim[1] -1, xlim[2] +1, length.out=100)
+  x2 <- seq(ylim[1] -1, ylim[2] +1, length.out=100)
+
   Xtest <- meshgrid(x1, x2)
   Xtest <- matrix(c(Xtest$x, Xtest$y), ncol=2)
 
@@ -35,7 +39,8 @@ showSVM <- function(X, y, kernel='linear', C=1, ...) {
   z <- t(matrix(out, 100, 100))
   # cols <- topo.colors(1000)
   cols <- terrain.colors(1000)
-  image(x1, x2, z, cols)
+  ## browser()
+  image(x1, x2, z, col=cols)
   contour(x1, x2, z, add=TRUE)
 
   ## Get indices to support vectors

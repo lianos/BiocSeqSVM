@@ -3,7 +3,9 @@
 %\VignettePackage{MLplay}
 \documentclass[11pt]{article}
 
-\usepackage{url}
+%% \usepackage{url}
+\usepackage{hyperref}
+
 \usepackage{colortbl}
 \usepackage{amsmath}
 \usepackage[pdftex]{graphicx}
@@ -103,13 +105,23 @@
 
 \maketitle
 
-The goal of this tutorial is to explore how some machine learning techniques,
-particularly support vector machines and string kernels, can be used
-with next generation sequencing data in order to have fun with biology. We will
-be using different types of sequencing data (RNA-seq and HITS-CLIP) in order to
-model the ``preferred binding landscape'' of an RNA binding protein
-(pasilla/NOVA) and see if this landscape is conserved among evolutionary
-distant eukaryotes (fruit fly and mouse).
+The goal of this tutorial is to provide a brief and intuitive introduction to
+support vector machines (SVMs) and to ultimately show how they can be used to
+explore new aspects of biology that we can now assay for using high throughput
+sequencing (HTS) data.
+
+The are several interfaces to SVMs that already exist in \code{R}, namely
+the \href{http://cran.r-project.org/web/packages/kernlab/}{kernlab}
+and \code{http://cran.r-project.org/web/packages/e1071}{e1071} packages.
+This tutorial, however, will introduce a new SVM package named
+\href{http://lianos.github.com/shikken/}{shikken} which is a ``friendly''
+wrapper to the
+\href{http://www.shogun-toolbox.org/}{Shogun machine learning toolbox} --- a
+\code{C++} library focussed on large scale kernel methods (especially
+SVMs). We choose to use Shogun because it has a variety of string kernels
+implemented in a memory and speed efficient manner, which will prove
+useful in a variety of contexts that may arise when attempting to learn form
+sequencing in your own research.
 
 \renewcommand{\baselinestretch}{.6}
 
@@ -146,17 +158,24 @@ N <- 50
 X1 <- matrix(c(rep(2, N) + rnorm(N, 0.5), 1 + rnorm(N)), ncol=2)
 X2 <- matrix(c(rep(-2, N) - rnorm(N, 0.5), rnorm(N) -1), ncol=2)
 X <- rbind(X1, X2)
+
 y <- rep(c(1, -1), each=N)
 
 simplePlot(X, y)
 
-lsvm <- showSVM(X, y, kernel="linear", C=10, scale=1)
+lsvm <- showSVM(X, y, kernel="linear", C=10, use.bias=FALSE)
+## Calculate W
+
 gsvm <- showSVM(X, y, kernel="gaussian", C=10, width=1)
 
 ## What happens when it's not linearly separable?
-X1 <- rbind(X1, matrix(c(-1, 0), ncol=2))
-X <- rbind(X1, X2)
-y <- c(rep(1, N+1), rep(-1, N))
+X.harder <- rbind(X, matrix(c(0, 0), ncol=2))
+y.harder <- c(y, 1)
+
+simplePlot(X.harder, y.harder)
+
+lsvm <- showSVM(X.harder, y.harder, kernel='linear', C=10, use.bias=TRUE)
+## Calculate W
 @
 
 <<label=svmDecision>>=
@@ -164,17 +183,12 @@ y <- c(rep(1, N+1), rep(-1, N))
 set.seed(123)
 
 ##
-X <- matrix(c(rnorm(2 * N, 1, 1), rnorm(2 * N, -1, 1)), ncol=2)
+Xgaus <- matrix(c(rnorm(2 * N, 1, 1), rnorm(2 * N, -1, 1)), ncol=2)
+simplePlot(Xgaus, y)
 
-xlim <- c(min(X[,1]) -1, max(X[,1]) + 1)
-ylim <- c(min(X[,2]) -1, max(X[,2]) + 1)
-
-matplot(X[1:N, 1], X[1:N, 2], pch="+", col="blue", cex=1.5, xlim=xlim, ylim=ylim)
-matplot(X[-(1:N), 1], X[-(1:N), 2], pch="-", col="red", cex=1.5, add=TRUE)
-
-
-lsvm <- showSVM(X, y, kernel="linear", C=10)
-cat(sprintf("Linear svm accuracy: %.2f\n", sum(predict(lsvm, X) == y) / length(y)))
+lsvm <- showSVM(Xgaus, y, kernel="linear", C=10)
+cat(sprintf("Linear svm accuracy: %.2f\n",
+            sum(predict(lsvm, X) == y) / length(y)))
 
 
 gsvm <- showSVM(X, y, kernel="gaussian", C=1000, width=1)
@@ -361,8 +375,21 @@ http://www.fml.tuebingen.mpg.de/raetsch/lectures/talk-multitask-recomb2010.pdf
 %% Acknowledgements
 \section{Acknowledgements}
 \label{sec:acknowledgements}
-Christina Leslie, Raphael Pelessof, Gunnar Raetsch, Chris Widmer
 
+I had to pick a few brains in order to get this lab together and I'd like to
+thank them here.
+
+\emph{Chris Widmer} in Gunnar Raetch's lab for provided instrumental help with
+many of the nuts-and-bolts questions I had about the shogun toolbox. He also
+provided  materials from some of his previous talks about shogun as well as
+multi-task learning that I adapted for some of the material in this tutorial.
+
+\emph{Raphael Pelossof} and \emph{Alvaro Gonzalez} for useful conversations.
+They are both post-docs in my advisor's lab and are always happy to share their
+expertise.
+
+Finnaly, I'd like to thank my advisor \emph{Christina Leslie} for always being
+happy to shine her flash-light on just about everything.
 
 \bibliography{MLplay}
 \bibliographystyle{plain}
