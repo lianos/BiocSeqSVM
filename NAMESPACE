@@ -1,14 +1,13 @@
 import(methods)
+import(shikken)
 import(data.table)
 import(GenomicRanges)
 import(Biostrings)
 import(kernlab)
-import(sg)
 
 export(
-       predict,
-       SpectrumFeatures,
-       ksvm
+       simplePlot,
+       showSVM,
        )
 
 

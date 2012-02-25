@@ -164,9 +164,8 @@ y <- rep(c(1, -1), each=N)
 simplePlot(X, y)
 
 lsvm <- showSVM(X, y, kernel="linear", C=10, use.bias=FALSE)
-## Calculate W
 
-gsvm <- showSVM(X, y, kernel="gaussian", C=10, width=1)
+gsvm <- showSVM(X, y, kernel="gaussian", C=10, width=1, use.bias=FALSE)
 
 ## What happens when it's not linearly separable?
 X.harder <- rbind(X, matrix(c(0, 0), ncol=2))
@@ -186,14 +185,13 @@ set.seed(123)
 Xgaus <- matrix(c(rnorm(2 * N, 1, 1), rnorm(2 * N, -1, 1)), ncol=2)
 simplePlot(Xgaus, y)
 
-lsvm <- showSVM(Xgaus, y, kernel="linear", C=10)
+lsvm <- showSVM(Xgaus, y, kernel="linear", C=10, use.bias=F)
 cat(sprintf("Linear svm accuracy: %.2f\n",
-            sum(predict(lsvm, X) == y) / length(y)))
+            sum(predict(lsvm, Xgaus) == y) / length(y)))
 
 
-gsvm <- showSVM(X, y, kernel="gaussian", C=1000, width=1)
+gsvm <- showSVM(Xgaus, y, kernel="gaussian", C=10, width=1, use.bias=F)
 cat(sprintf("Gaussian svm accuracy: %.2f\n", sum(predict(gsvm, X) == y) / length(y)))
-
 @
 %%   - Introduce string kernel as first/intuitive way to measure sequence
 %%     similarity between two strings
