@@ -67,6 +67,33 @@ if (FALSE) {
   save(nova.peaks, file='../NOVA.mm9.rda')
 }
 
+## Parse wigFix file for dm3 and mm9 conservation
+if (FALSE) {
+  ##############################################################################
+  ## mm9
+  ##
+  ## All wigFix files were downloaded from:
+  ## http://hgdownload.cse.ucsc.edu/goldenPath/mm9/phyloP30way/vertebrate/
+  mm9.cons <- dir('/Users/stavros/cBio/data/conservation/mm9/phyloP27/vertebrate',
+                  full.names=TRUE)
+  for (file in dir(mm9.dir)) {
+    info <- readLines(gzfile(file))
+    if (!length(grep("step=1", info[1]))) {
+      warning(basename(file), " isn't step=1")
+    } else {
+      outname <- gsub(".wigFix.gz", ".rds", file)
+      xx <- as.double(info[-1])
+    }
+  }
+
+
+  ##############################################################################
+  ## dm3
+  ##
+  ## Files were d/led from:
+  ## http://hgdownload.cse.ucsc.edu/goldenPath/dm3/phastCons15way/
+}
+
 ## Data for toy string kernels
 ##
 ## We'll use the promoter-gene and splice-junction gene sequences?

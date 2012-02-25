@@ -12,8 +12,8 @@
 \usepackage{fancyvrb}
 \usepackage{fancyhdr}
 \usepackage{lastpage}
-\usepackage{booktabs} 
-\usepackage{longtable} 
+\usepackage{booktabs}
+\usepackage{longtable}
 \usepackage[boxed, linesnumbered]{algorithm2e}
 \usepackage[
          colorlinks=true,
@@ -116,18 +116,77 @@ distant eukaryotes (fruit fly and mouse).
 \tableofcontents
 
 \thispagestyle{empty}
-	
+
 \vspace{.2in}
 
 \renewcommand{\baselinestretch}{1}
 
-<<loadLibs, results = hide, echo = FALSE>>=
-#library(GenomicRanges)
-#library(caret)
-#library(sg)
-#library(pasilla)
-#library(BSgenome.Dmelanogaster.UCSC.dm3)
-#library(BSgenome.Mmusculus.UCSC.mm9)
+<<loadLibs, results=hide, echo=TRUE, eval=TRUE>>=
+suppressPackageStartupMessages({
+  library(Biostrings)
+  library(shikken)
+  library(fields)
+})
+@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Introduction to SVMs
+%%   - Show primal
+%%   - Show image of what it means to be a large margin classifier
+%%   - Mention kernel trick
+%%     This let's us measure differences between samples in different feature
+%%     spaces more naturally.
+
+<<label=easyClassificationProblem>>=
+set.seed(123)
+N <- 50
+
+## easy to separate data
+X1 <- matrix(c(rep(2, N) + rnorm(N, 0.5), 1 + rnorm(N)), ncol=2)
+X2 <- matrix(c(rep(-2, N) - rnorm(N, 0.5), rnorm(N) -1), ncol=2)
+X <- rbind(X1, X2)
+y <- rep(c(1, -1), each=N)
+
+simplePlot(X, y)
+
+lsvm <- showSVM(X, y, kernel="linear", C=10, scale=1)
+gsvm <- showSVM(X, y, kernel="gaussian", C=10, width=1)
+
+## What happens when it's not linearly separable?
+X1 <- rbind(X1, matrix(c(-1, 0), ncol=2))
+X <- rbind(X1, X2)
+y <- c(rep(1, N+1), rep(-1, N))
+@
+
+<<label=svmDecision>>=
+## Let's make 2D data from gaussians with different means
+set.seed(123)
+
+##
+X <- matrix(c(rnorm(2 * N, 1, 1), rnorm(2 * N, -1, 1)), ncol=2)
+
+xlim <- c(min(X[,1]) -1, max(X[,1]) + 1)
+ylim <- c(min(X[,2]) -1, max(X[,2]) + 1)
+
+matplot(X[1:N, 1], X[1:N, 2], pch="+", col="blue", cex=1.5, xlim=xlim, ylim=ylim)
+matplot(X[-(1:N), 1], X[-(1:N), 2], pch="-", col="red", cex=1.5, add=TRUE)
+
+
+lsvm <- showSVM(X, y, kernel="linear", C=10)
+cat(sprintf("Linear svm accuracy: %.2f\n", sum(predict(lsvm, X) == y) / length(y)))
+
+
+gsvm <- showSVM(X, y, kernel="gaussian", C=1000, width=1)
+cat(sprintf("Gaussian svm accuracy: %.2f\n", sum(predict(gsvm, X) == y) / length(y)))
+
+@
+%%   - Introduce string kernel as first/intuitive way to measure sequence
+%%     similarity between two strings
+
+<<label=promoters>>=
+data(promoters, package="shikken")
+
 @
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,7 +195,21 @@ distant eukaryotes (fruit fly and mouse).
 \label{sec:motivation}
 The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
 
+<<label=novamm9distro>>=
+data(annotated.genomes)
+data(NOVA.mm9)
+gd
+nova.summary <- data.table(as.data.frame(nova.peaks))[, {
+  list(score=sum(score))
+}, by="exon.anno"]
 
+gg.angle <- opts(axis.text.x=theme_text(angle=-45, hjust=0, vjust=1))
+
+g <- ggplot(nova.summary, aes(x=exon.anno, y=score, fill=exon.anno)) +
+  geom_bar(stat="identity") + theme_bw() + gg.angle +
+  opts(title="NOVA binding site regions in mm9")
+print(g)
+@
 %% ============================================================================
 %% Caveat emptor
 \subsection{Caveat emptor}
@@ -298,6 +371,6 @@ Christina Leslie, Raphael Pelessof, Gunnar Raetsch, Chris Widmer
 \section{Session Information}
 <<sessionInfo>>=
 sessionInfo()
-@ 
+@
 
 \end{document}
