@@ -58,7 +58,7 @@ plotDecisionSurface <- function(model, X, y, wireframe=FALSE) {
     ## image(x1, x2, z, col=cols)
     ## image.plot in fields package gives us a handy color bar/legend
     image.plot(x1, x2, z, col=terrain.colors(50))
-    contour(x1, x2, z, add=TRUE)
+    contour(x1, x2, z, add=TRUE, lwd=1.5)
 
     ## Get indices to support vectors
     svs <- SVindex(model)
@@ -66,8 +66,8 @@ plotDecisionSurface <- function(model, X, y, wireframe=FALSE) {
     posSVs <- X[y ==  1 & 1:nrow(X) %in% svs,, drop=FALSE]
     negSVs <- X[y == -1 & 1:nrow(X) %in% svs,, drop=FALSE]
 
-    pos <- X[y ==  1 & !1:nrow(X) %in% svs, ]
-    neg <- X[y == -1 & !1:nrow(X) %in% svs, ]
+    pos <- X[y ==  1 & !(1:nrow(X) %in% svs), ]
+    neg <- X[y == -1 & !(1:nrow(X) %in% svs), ]
 
     matplot(posSVs[,1], posSVs[,2], pch="+", col="red", add=TRUE, cex=1.5)
     matplot(negSVs[,1], negSVs[,2], pch="-", col="red", add=TRUE, cex=1.5)

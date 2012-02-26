@@ -281,6 +281,9 @@ set.seed(123)
 N <- 50
 X1 <- matrix(c(rep(-2, N) - rnorm(N, 1), rnorm(N) + 2), ncol=2)
 X2 <- matrix(c(rep( 2, N) + rnorm(N, 1), rnorm(N) - 2), ncol=2)
+
+## Note that it's generally a good idea to scale your data
+## (especially if its continuous) so we do that here.
 X <- scale(rbind(X1, X2))
 y <- rep(c(1, -1), each=N)
 @
@@ -304,39 +307,73 @@ The \texttt{plotDecisionSurface} function draws the data points
 over a contour plot of the decision surface from the SVM. The decision
 boundary is located at the $z=0$ contour. The points in red are the
 examples that serve as the support vectors --- note how these examples
-orient the decision boundary.
+orient the decision boundary. As examples get further and further away
+from the decision boundary, their decision values get increasingly higher.
+When the SVM produces a high (absolute) decision value, you can think of
+it as giving a high-confidence prediction of the class label. Positive
+decision values belong to one class, negative values belong to the other.
 
-Take note of what happens to the decision boundary and support vectors
-when we decrease the value of $C$ to 1. How about when $C = 0.5$. Why
-does that happen?
+\emph{What happens to the decision boundary and support vectors
+when we decrease the value of $C$ to either $0.5$ or $0.1$.
+Why does that happen?}
 
 <<label=easyPlay,fig=FALSE>>=
-lsvm <- SVM(X, y, C=1)
+lsvm <- SVM(X, y, C=0.5)
 plotDecisionSurface(lsvm, X, y)
 
-lsvm <- SVM(X, y, C=0.5)
+lsvm <- SVM(X, y, C=0.1)
 plotDecisionSurface(lsvm, X, y)
 @
 
+As we all know, datasets aren't as well behaved as the toy example we've
+tried so far. Let's imagine there was some noise in a measurement that
+produced an outlier of our positively labeled data that looks a lot
+closer to our negative data than the positive data.
 
+<<label=easyOutlier,fig=FALSE>>=
+X.out <- rbind(X, t(c(-2, -0.5)))
+y.out <- c(y, 1)
 
-<<label=easyMarginMove,fig=TRUE,include=FALSE>>=
-X.harder <- rbind(X, matrix(c(0, 0), ncol=2))
-y.harder <- c(y, 1)
+lsvm <- SVM(X.out, y.out, C=10)
+plotDecisionSurface(lsvm, X.out, y.out)
 
-lsvm <- SVM(X.harder, y.harder, kernel="linear", C=10)
-table(predict(lsvm, X.harder), y.harder)
+table(predict(lsvm, X.out), y.out)
+@
 
-plotDecisionSurface(lsvm, X.harder, y.harder)
+The SVM is doing its job and classifying the data perfectly, but is this
+desirable?
+
+\emph{What should we do instead? Is the best classifier you can build the
+one that always classifies your training data perfectly?}
+
+<<label=easySoftMargin,echo=FALSE,include=FALSE,fig=TRUE>>=
+lsvm <- SVM(X.out, y.out, C=1)
+plotDecisionSurface(lsvm, X.out, y.out)
 @
 
 \begin{figure}[htbp]
   \centering  
   \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMargin.pdf}}\quad
-  \subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMarginMove.pdf} }}
-  \caption{Finding the maximum margin hyperplane in shifting data}
+  \subfigure{\includegraphics[width=3in]{Rfigs/gen-easySoftMargin.pdf} }}
+  \caption{
+    Finding large margin hyperplane in well behaved data. A toy dataset is
+    shown that is intuitively easy to classify. On the left, there isn't
+    much left up to interpretation as to whether or not the SVM can finds
+    the best separating hyperplane that has the largest margin. In the
+    example on the right, imagine we observed an outlier in our set of
+    positively labeled data. Trying to fit the hyperplane to classify that
+    example will severely skew the decision boundary and rotate it to the
+    right (as we saw in the examples). Setting $C = 0.5$ allows us to recover
+    a classifier with a larger margin by allowing the SVM to misclassify the
+    ``outlier''.
+  }
   \label{fig:easymargin}
 \end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Kernels
+\section{Kernels}
+\label{sec:kernels}
 
 
 
