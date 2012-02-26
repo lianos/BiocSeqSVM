@@ -108,6 +108,9 @@
 The goal of this tutorial is to provide a brief and intuitive introduction to
 some machine learning techniques --- primarily support vector machines. Some
 mathematical rigor will likely be sacrificed in order to appeal to intuition.
+Technical concepts will be followed closely by practical examples in R to help
+shed light on thing that may seem to be, at first, too abstract.
+
 We will introduce string kernels and show how they can be used to learn from
 sequencing data. An example of how you can begin to use them with HITS-CLIP
 data to try to identify the preferred binding landscape for the
@@ -170,16 +173,15 @@ where the smart application of ML techniques can really pay off.
   will likely be helpful:
   
   \begin{itemize}
-    \item The \href{http://www.bioconductor.org/help/course-materials/2011/CSAMA/}{CSAMA 2011 workshop, machine learning primer} by Vincent Carey.
-    \item The \href{}{vignette from the caret package} by Max Kuhn.
+    \item The \href{http://www.bioconductor.org/help/course-materials/2011/CSAMA/}{CSAMA 2011 workshop, machine learning primer}, by Vincent Carey.
+    \item The \href{http://cran.r-project.org/web/packages/kernlab/}{vignette from the caret package}, by Max Kuhn.
   \end{itemize}
   
   \item We will be exploring support vector machines through a new R library
-  I am authoring together called \href{https://gihub.com/lianos/shikken}{shikken}.
-  While there are several R libraries that provide an interface to SVMs, shikken
-  is a wrapper to the
+  I am authoring called \href{https://gihub.com/lianos/shikken}{shikken}.
+  Shikken is a wrapper to the
   \href{http://www.shogun-toolbox.org/}{Shogun machine learning toolbox}.
-  Shogun is a \texttt{C++} library focussed on large scale kernel methods and
+  a \texttt{C++} library focussed on large scale kernel methods. Shogun
   has the largest variety of SVM solvers and kernel methods I have encountered
   in one package. It also has a focus on kernel methods that are useful in
   biology --- particularly ones that work on sequence features. My hope is that
@@ -190,24 +192,26 @@ where the smart application of ML techniques can really pay off.
 \end{itemize}
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Support Vector Machines
-\section{Support Vector Machines and large margin classifiers}
+\section{Support vector machines and large margin classifiers}
 \label{sec:support_vector_machines}
 
 [Note: the details and examples to illustrate the fundamentals of how SVMs
-work are largely taken and summarized from~\cite{BenHur:2008ec,BenHur:2009ch}]
+work are largely taken and summarized from~\cite{BenHur:2008ec,BenHur:2009ch}.
+William Noble has also authored another introduction to SVMs that appeals to
+intuition over mathematical rigor~\cite{Noble:2006br}]
 
 The Support Vector Machine (SVM) is a versatile and state-of-the-art classifier
 that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}.
-An advantageous property of SVMs, as shown in Figure~\ref{fig:svmdecision} is that
-they build large margin linear classifiers that, typically, live in high
+As shown in Figure~\ref{fig:svmdecision}, an advantageous property of the SVM,
+is that it creates a large margin linear classifier that, typically, lives in high
 dimensional spaces. The margin of a classifier is simply defined as the shortest
-distance from the decision boundary to the first training example. Large margin
-classifiers have the tendency to generalize well to unseen data --- intuitively
-because they provide more ``breathing room'' between the decision boundary and
-the next unseen data point you want to classify.
+distance from the decision boundary to the first training example (that is not
+actively being ignored!). Large margin classifiers have the tendency to
+generalize well to unseen data --- intuitively because they provide more
+``breathing room'' between the decision boundary and the next unseen data point
+you want to classify.
 
 \begin{figure}[htbp]
   \centering
@@ -223,7 +227,7 @@ the next unseen data point you want to classify.
     violation $\xi_i$. The examples with dark borders are the support vectors, which
     orient the direction of $\vec{W}$. The size of the margin for this classifier is
     identified by the blue line.\footnote{
-      This figure was adapted from wikipedia:
+      This figure was adapted from wikipedia (2012-02-22):
       \url{http://en.wikipedia.org/wiki/Support_vector_machine}
     }
   }
@@ -257,7 +261,84 @@ It is often the case, however, that data is not cleanly separable and the
 The slack variables permit examples to lie within the margin or to be
 misclassified while still finding a large margin over the rest of the training
 data. To discourage excess use of slack variables, a cost parameter
-$C$ is also introduced.
+$C$ is also introduced. When training an SVM, it is important to identify the
+best value for $C$ given the data you have available to you. We will briefly
+explain how to do this later in Section~\ref{sec:model_refinement}.
+
+\paragraph{Basic SVM in R}
+\label{par:basic_svm_in_r}
+
+Let's fire up R and create a dataset that almost looks like that data in
+Figure~\ref{fig:svmdecision} so we can see how to classify it using the
+SVM methods available in shikken.
+ 
+<<initialize, results=hide, echo=TRUE, eval=TRUE>>=
+library(MLplay)
+library(shikken)
+
+## Create two clas data
+set.seed(123)
+N <- 50
+X1 <- matrix(c(rep(-2, N) - rnorm(N, 1), rnorm(N) + 2), ncol=2)
+X2 <- matrix(c(rep( 2, N) + rnorm(N, 1), rnorm(N) - 2), ncol=2)
+X <- scale(rbind(X1, X2))
+y <- rep(c(1, -1), each=N)
+@
+
+To use an SVM to clasify a dataset, shikken provides the \texttt{SVM}
+method which accepts a dataset \texttt{x} of observations (rows), and
+a label vector \texttt{y}. The \texttt{C} parameter is the same $C$
+described in Formula~\ref{eqn:softmargin}, ie. the cost for non-zero
+slack variables.
+
+<<label=easyMargin,fig=TRUE,include=FALSE>>=
+lsvm <- SVM(X, y, C=10)
+
+## Does it accurately classify the data?
+table(predict(lsvm, X), y)
+
+plotDecisionSurface(lsvm, X, y)
+@
+
+The \texttt{plotDecisionSurface} function draws the data points
+over a contour plot of the decision surface from the SVM. The decision
+boundary is located at the $z=0$ contour. The points in red are the
+examples that serve as the support vectors --- note how these examples
+orient the decision boundary.
+
+Take note of what happens to the decision boundary and support vectors
+when we decrease the value of $C$ to 1. How about when $C = 0.5$. Why
+does that happen?
+
+<<label=easyPlay,fig=FALSE>>=
+lsvm <- SVM(X, y, C=1)
+plotDecisionSurface(lsvm, X, y)
+
+lsvm <- SVM(X, y, C=0.5)
+plotDecisionSurface(lsvm, X, y)
+@
+
+
+
+<<label=easyMarginMove,fig=TRUE,include=FALSE>>=
+X.harder <- rbind(X, matrix(c(0, 0), ncol=2))
+y.harder <- c(y, 1)
+
+lsvm <- SVM(X.harder, y.harder, kernel="linear", C=10)
+table(predict(lsvm, X.harder), y.harder)
+
+plotDecisionSurface(lsvm, X.harder, y.harder)
+@
+
+\begin{figure}[htbp]
+  \centering  
+  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMargin.pdf}}\quad
+  \subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMarginMove.pdf} }}
+  \caption{Finding the maximum margin hyperplane in shifting data}
+  \label{fig:easymargin}
+\end{figure}
+
+
 
 Details of the optimization problem are summarized from
 
@@ -325,48 +406,6 @@ implemented in a memory and speed efficient manner, which will prove
 useful in a variety of contexts that may arise when attempting to learn form
 sequencing in your own research.
 
-<<initialize, results=hide, echo=TRUE, eval=TRUE>>=
-suppressPackageStartupMessages({
-  library(MLplay)
-  library(ggplot2)
-})
-@
-
-<<label=easyMargin,fig=TRUE,include=FALSE>>=
-set.seed(123)
-N <- 50
-
-## easy to separate data
-X1 <- matrix(c(rep(2, N) + rnorm(N, 0.5), 1 + rnorm(N)), ncol=2)
-X2 <- matrix(c(rep(-2, N) - rnorm(N, 0.5), rnorm(N) -1), ncol=2)
-X <- scale(rbind(X1, X2))
-y <- rep(c(1, -1), each=N)
-
-lsvm <- SVM(X, y, kernel="linear", C=10)
-table(predict(lsvm, X), y)
-
-plotDecisionSurface(lsvm, X, y)
-@
-
-And what happens when data moves closer to the margin?
-
-<<label=easyMarginMove,fig=TRUE,include=FALSE>>=
-X.harder <- rbind(X, matrix(c(0, 0), ncol=2))
-y.harder <- c(y, 1)
-
-lsvm <- SVM(X.harder, y.harder, kernel="linear", C=10)
-table(predict(lsvm, X.harder), y.harder)
-
-plotDecisionSurface(lsvm, X.harder, y.harder)
-@
-
-\begin{figure}[htbp]
-  \centering  
-  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMargin.pdf}}\quad
-  \subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMarginMove.pdf} }}
-  \caption{Finding the maximum margin hyperplane in shifting data}
-  \label{fig:easymargin}
-\end{figure}
 
 
 To extract the weight vector

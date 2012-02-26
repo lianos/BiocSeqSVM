@@ -1,14 +1,14 @@
-Package: MLplay
+Package: BiocSeqSVM
 Version: 0.1-2012
-Title: Pedagogical machine learning exercises for NGS data
+Title: Pedagogical machine learning exercises using SVMs for NGS data
 Author: Steve Lianoglou
 Maintainer: Steve Lianoglou <slianoglou@gmail.com>
-Description: Pedagogical machine learning exercises for NGS data
-Depends: shikken, kernlab, caret, Biostrings, GenomicRanges, data.table
+Description: Pedagogical machine learning exercises using SVMs for NGS data
+Depends: shikken, kernlab, caret, Biostrings, GenomicRanges, data.table, ggplot2
 LazyLoad: Yes
 Imports: methods, data.table, GenomicRanges, kernlab, Biostrings, sg, fields
 Suggests: testthat, roxygen2, org.Dm.eg.db, org.Mm.eg.db,
     BSgenome.Dmelanogaster.UCSC.dm3, BSgenome.Mmusculus.UCSC.mm9,
     TxDb.Dmelanogaster.UCSC.dm3.ensGene, TxDb.Mmusculus.UCSC.mm9.knownGene
 License: CC BY-SA (v3.0)
-URL: http://github.com/lianos/MLplay
+URL: http://github.com/lianos/BiocSeqSVM
