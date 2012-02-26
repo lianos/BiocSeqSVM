@@ -50,7 +50,7 @@
 %% End: Purty -----------------------------------------------------------------
 
 \usepackage{Sweave}
-\SweaveOpts{keep.source=TRUE}
+\SweaveOpts{keep.source=TRUE,prefix.string=Rfigs/gen}
 
 % define new colors for use
 \definecolor{darkgreen}{rgb}{0,0.6,0}
@@ -99,6 +99,7 @@
 
 \begin{document}
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Title page
 
@@ -107,11 +108,25 @@
 The goal of this tutorial is to provide a brief and intuitive introduction to
 some machine learning techniques --- primarily support vector machines. Some
 mathematical rigor will likely be sacrificed in order to appeal to intuition.
-We will ultimately show how they can be used to explore new aspects of biology
-that we can now assay for using high throughput sequencing data.
+We will introduce string kernels and show how they can be used to learn from
+sequencing data. An example of how you can begin to use them with HITS-CLIP
+data to try to identify the preferred binding landscape for the
+RNA binding protein \emph{NOVA-1/2} will be introduced.
 
 This vignette is written in a style that is meant to be amenable to self study.
 A live presentation of this material should probably be less verbose.
+
+This document and package made its initial debut as a tutorial given at the
+\emph{Advanced R / Bioconductor Workshop on High-Throughput Genetic Analysis}
+hosted at the Fred Hutchinson Cancer Research Center in February, 2012. It will
+continue to live (and receive updates) in the hope that others may find it
+useful to learn from at the following github repository:
+
+\begin{center}
+  \url{https://github.com/lianos/BiocSeqSVM}
+\end{center}
+
+\clearpage
 
 \renewcommand{\baselinestretch}{.6}
 
@@ -122,16 +137,11 @@ A live presentation of this material should probably be less verbose.
 \vspace{.2in}
 
 \renewcommand{\baselinestretch}{1}
+
+\clearpage
+
 <<options,echo=FALSE>>=
 options(width=75)
-@
-
-
-<<initialize, results=hide, echo=TRUE, eval=TRUE>>=
-suppressPackageStartupMessages({
-  library(MLplay)
-  library(ggplot2)
-})
 @
 
 
@@ -162,11 +172,16 @@ are worth exploring.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Support Vector Machines
-\section{Support Vector Machines}
+\section{Support Vector Machines and large margin classifiers}
 \label{sec:support_vector_machines}
 
 The Support Vector Machine (SVM) is a versatile and state-of-the-art classifier
-that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}. As
+that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}. An
+advantageous property of SVMs, as shown in Figure~\ref{fig:svmdecision} is that
+they build large margin classifiers. This is important because these types of
+classifiers tend to generalized well to unseen data.
+
+types of classifiers tend to generalize well to unseendAs
 compared to other types of classifiers, an advantage the SVM is that it builds
 a maximal margin (linear) classifiers that live in (extremely) high dimensional
 spaces. SVMs can use kernels to exploit the relationship between the features
@@ -237,7 +252,7 @@ introduced. The soft margin optimization function follows:
 
 
 
-One particular drawback of SVMs is that it even though they can
+One particular drawback of SVMs is that even though they can
 produce highly accurate classification machines, the interpretation of the
 classifiers you can build can prove difficult. We will discuss some ways
 to open the ``black box'' of your classifier in this vignette as well.
@@ -252,6 +267,35 @@ SVMs and kernels for computational biology~\cite{BenHur:2008ec}
 %%     This let's us measure differences between samples in different feature
 %%     spaces more naturally.
 
+
+%% ============================================================================
+%% Kernels
+\subsection{Kernels}
+\label{sub:kernels}
+
+Using kernels, a linear classifier can generate non-linear decision boundaries.
+This is accomplished by mapping the data to another (typically higher dimension)
+feature space using a function $\phi$. The discriminant function is then
+transformed to:
+
+\begin{align}
+  f(x) = \left\langle {\bf w}, \phi ({\bf x}) \right\rangle + b
+\label{eqn:phidisc}
+\end{align}
+
+$f(x)$ is linear in the feature space defined by the mapping function $\phi$,
+but can look non-linear when projected back down to the original feature space.
+
+A, perhaps non-obvious, advantage of measuring relationships between examples
+through kernel functions is that we often do not have to map examples
+into the higher dimensional feature space to calculate their similarity. This
+project can be implicit, which can provide large memory and computational cost
+gains. Refer to the polynomial kernel example below.
+
+\begin{equation}
+  f(x) = \sum_{i=1}^N \alpha_i y_i k({\bf x_i}, {\bf x}) + b
+\label{eqn:kernelexp}
+\end{equation}
 
 %% ============================================================================
 %% SVMs in R
@@ -271,18 +315,12 @@ implemented in a memory and speed efficient manner, which will prove
 useful in a variety of contexts that may arise when attempting to learn form
 sequencing in your own research.
 
-%% ============================================================================
-%% Kernels
-\subsection{Kernels}
-\label{sub:kernels}
-
-Kernels project data into different spaces. The SVM can employ a kernel
-expansion
-
-\begin{equation}
-  f(x) = \sum_{i=1}^N \alpha_i y_i k({\bf x_i}, {\bf x}) + b
-\label{eqn:kernelexp}
-\end{equation}
+<<initialize, results=hide, echo=TRUE, eval=TRUE>>=
+suppressPackageStartupMessages({
+  library(MLplay)
+  library(ggplot2)
+})
+@
 
 <<label=easyMargin,fig=TRUE,include=FALSE>>=
 set.seed(123)
@@ -314,8 +352,8 @@ plotDecisionSurface(lsvm, X.harder, y.harder)
 
 \begin{figure}[htbp]
   \centering  
-  \mbox{\subfigure{\includegraphics[width=3in]{MLplay-easyMargin.pdf}}\quad
-  \subfigure{\includegraphics[width=3in]{MLplay-easyMarginMove.pdf} }}
+  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMargin.pdf}}\quad
+  \subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMarginMove.pdf} }}
   \caption{Finding the maximum margin hyperplane in shifting data}
   \label{fig:easymargin}
 \end{figure}
@@ -353,8 +391,8 @@ plotDecisionSurface(psvm, Xc, yc, wireframe=TRUE)
 
 \begin{figure}[htbp]
   \centering  
-  \mbox{\subfigure{\includegraphics[width=3in]{MLplay-svmPoly.pdf}}\quad
-  \subfigure{\includegraphics[width=3in]{MLplay-svmPoly3D.pdf} }}
+  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-svmPoly.pdf}}\quad
+  \subfigure{\includegraphics[width=3in]{Rfigs/gen-svmPoly3D.pdf} }}
   \caption{Using a polynomial kernel to split data in a higher dimension}
   \label{fig:polykernel}
 \end{figure}
@@ -375,8 +413,8 @@ plotDecisionSurface(gsvm, Xc, yc, wireframe=TRUE)
 
 \begin{figure}[htbp]
   \centering  
-  \mbox{\subfigure{\includegraphics[width=3in]{MLplay-svmGaus.pdf}}\quad
-  \subfigure{\includegraphics[width=3in]{MLplay-svmGaus3D.pdf} }}
+  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-svmGaus.pdf}}\quad
+  \subfigure{\includegraphics[width=3in]{Rfigs/gen-svmGaus3D.pdf} }}
   \caption{Using a gaussian kernel to split data in a higher dimension}
   \label{fig:polykernel}
 \end{figure}
