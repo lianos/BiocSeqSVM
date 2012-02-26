@@ -320,23 +320,39 @@ Cite Christina
 where $N(u,x)$ is the function that returns the number of occurrences of kmer
 $u$ in the string $x$.
 
-TODO: Classify promoters
+\emph{Exercise: Build your own spectrum kernel implementation}.
+\emph{Exercise: How long do the kmers have to be to build a strong classifier?}
 
 <<label=promoters>>=
 data(promoters, package="shikken")
-
+head(promoters)
+pr.class <- values(promoters)$class
+X.proms <- spectrumFeatures(promoters, degree=4)
 @
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Motivation
-\section{Motivation}
-\label{sec:motivation}
-The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
+TODO: Randomize promoters? reverse them, etc. does it still work?
+
+TODO: Extract ${\bf W}$ and visualize with \texttt{worcloud}.
+
+The elastic net can do similar~\cite{Zou:2005elastic}.
+TODO: Show same example using \texttt{glmnet}.
+
+%% ============================================================================
+%% Characterize NOVA binding sites
+\subsection{Characterize NOVA binding sites}
+\label{sub:characterize_nova_binding_sites}
+
+Try to use a spectrum kernel to identify preferred binding landscape of
+\emph{NOVA-1/2} RNA binding protein.
+
+Where does it like to bind?
 
 <<label=novamm9distro>>=
 data(annotated.genomes)
 data(NOVA.mm9)
-gd
+
+head(nova.peaks)
+
 nova.summary <- data.table(as.data.frame(nova.peaks))[, {
   list(score=sum(score))
 }, by="exon.anno"]
@@ -348,6 +364,24 @@ g <- ggplot(nova.summary, aes(x=exon.anno, y=score, fill=exon.anno)) +
   opts(title="NOVA binding site regions in mm9")
 print(g)
 @
+
+%% ============================================================================
+%% Apply NOVA binding model to Drosophila homolog
+
+%% ============================================================================
+%% Apply NOVA binding model to Drosophila homolog
+\subsection{Apply NOVA binding model to Drosophila homolog}
+\label{sub:apply_nova_binding_model_to_drosophila_homolog}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Motivation
+\section{Motivation}
+\label{sec:motivation}
+The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
+
 
 
 %% ----------------------------------------------------------------------------
