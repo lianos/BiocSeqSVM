@@ -3,9 +3,6 @@
 %\VignettePackage{MLplay}
 \documentclass[11pt]{article}
 
-%% \usepackage{url}
-\usepackage{hyperref}
-
 \usepackage{colortbl}
 \usepackage{amsmath}
 \usepackage[pdftex]{graphicx}
@@ -16,13 +13,15 @@
 \usepackage{lastpage}
 \usepackage{booktabs}
 \usepackage{longtable}
+\usepackage{subfigure}
+
 \usepackage[boxed, linesnumbered]{algorithm2e}
 \usepackage[
          colorlinks=true,
          linkcolor=blue,
          citecolor=blue,
-         urlcolor=blue]
-         {hyperref}
+         urlcolor=blue]{hyperref}
+
 \usepackage{lscape}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,7 +89,7 @@
 % trick has fixed it for me in the past
 \setlength\headsep{25pt}
 
-\title{Exploring the preferred binding landscape of an RNA binding protein using high throughput sequencing data and machine learning}
+\title{Learning from Sequencing Data with Support Vector Machines}
 
 \author{
   Steve Lianoglou \\
@@ -123,12 +122,15 @@ A live presentation of this material should probably be less verbose.
 \vspace{.2in}
 
 \renewcommand{\baselinestretch}{1}
+<<options,echo=FALSE>>=
+options(width=75)
+@
 
-<<loadLibs, results=hide, echo=TRUE, eval=TRUE>>=
+
+<<initialize, results=hide, echo=TRUE, eval=TRUE>>=
 suppressPackageStartupMessages({
-  library(Biostrings)
-  library(shikken)
-  library(fields)
+  library(MLplay)
+  library(ggplot2)
 })
 @
 
@@ -175,33 +177,74 @@ dimensional) space in order to find a separating hyperplane to split the data.
   \centering
     \includegraphics[scale=0.5]{figs/decision-boundaries.pdf}
   \caption{
-    Support vector machines find maximal margin separating hyperplanes.
+    The anatomy of a decision boundary for a large (and soft) margin classifier.
     The red, green, and blue decision boundaries in \textbf{A} all separate
     the data equally well. The decision boundary found by the SVM in \textbf{B}
     is defined by the direction and magnitude of its orthonormal vector $\vec{W}$.
-    This decision boundary is equally distant from the closest positive (filled) and
-    negative (hollow) examples. The examples with dark borders are the support
-    vectors, which orient the direction of $\vec{W}$. The red support vector is
-    allowed to cross the margin, but pays a ``penalty'' $\xi_i$.
+    This decision boundary is has the maximum margin in that it is equally distant
+    from the closest positive (filled) and negative (hollow) examples.
+    The examples with dark borders are the support vectors, which orient the 
+    direction of $\vec{W}$. The size of the margin for this classifier is identified
+    by the blue line. The red support vector is allowed to cross the margin,
+    and does not shift the decision boundary by paying a penalty that is proportional
+    to $\xi_i$. (Figure adapted form wikipedia)
   }
   \label{fig:svmdecision}
 \end{figure}
 
+The margin of a linear classifier is defined as the distance of the closest point
+to the decision boundary --- SVMs build classifiers that maximize this distance.
+
 The idea of the maximum margin is shown in~Figure\ref{fig:svmdecision}.
 
-The SVM optimizes the following (primal) loss equation:
+Details of the optimization problem are summarized from~\cite{BenHur:2008ec}
 
-\begin{equation}
-  \min_{ {\bf w}, b} \max_{\alpha} \left\{ \frac{1}{2} \| {\bf w} \|^2 - \sum_{i=1}^n \alpha_i [ y_i ({\bf w} \cdot {\bf x}_i - b) - 1] \right\}
+The hard margin SVM optimizes the following function:
+
+
+
+\begin{align}
+  \min_{ {\bf w}, b} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 \nonumber \\
+  \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 \nonumber \\
+  \mbox{for } i = 1 \dots n
 \label{eqn:primal}
-\end{equation}
+\end{align}
+
+The constraints in equation~\ref{eqn:primal} ensure that the examples are
+correctly classified and minimizing $\| {\bf w} \|^2$ is equivalent to
+maximizing the margin. In practice, data are often not cleanly separable.
+The idea of a soft margin was introduce to accommodate these problems. The
+soft margin allows the classifier to misclassify some examples in order keep
+the margin large. Soft margin classifiers typically provide better performance
+than hard margin SVMs. To allow for errors, \emph{slack variables} ($\xi_i$)
+are introduced into the inequality constraint in Equation~\ref{eqn:primal}
+to permit examples to lie within the margin or to be misclassified. To
+discourage excess use of slack variables, a cost parameter $C$ is also
+introduced. The soft margin optimization function follows:
+
+\begin{align}
+  \min_{ {\bf w}, b, \xi} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 + C \sum_{i=1}^n \xi_i \nonumber \\
+  \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 - \xi_i, \nonumber \\
+  \xi_i \ge 0, \mbox{for } i = 1 \dots n
+\label{eqn:soft}
+\end{align}
+
+
+% \begin{equation}
+%   \min_{ {\bf w}, b} \max_{\alpha} \left\{ \frac{1}{2} \| {\bf w} \|^2 - \sum_{i=1}^n \alpha_i [ y_i ({\bf w} \cdot {\bf x}_i - b) - 1] \right\}
+% \label{eqn:primal}
+% \end{equation}
+
+
 
 One particular drawback of SVMs is that it even though they can
 produce highly accurate classification machines, the interpretation of the
 classifiers you can build can prove difficult. We will discuss some ways
 to open the ``black box'' of your classifier in this vignette as well.
 
-
+Other SVM tutorials:
+What is a support vector machine~\cite{Noble:2006br}
+SVMs and kernels for computational biology~\cite{BenHur:2008ec}
 %%to SVMs
 %%   - Show primal
 %%   - Show image of what it means to be a large margin classifier
@@ -215,14 +258,14 @@ to open the ``black box'' of your classifier in this vignette as well.
 \subsection{SVMs in R}
 \label{sub:svms_in_r}
 
-The are several interfaces to SVMs that already exist in \code{R}, namely
+The are several interfaces to SVMs that already exist in \texttt{R}, namely
 the \href{http://cran.r-project.org/web/packages/kernlab/}{kernlab}
-and \code{http://cran.r-project.org/web/packages/e1071}{e1071} packages.
+and \href{http://cran.r-project.org/web/packages/e1071}{e1071} packages.
 This tutorial, however, will introduce a new SVM package named
 \href{http://lianos.github.com/shikken/}{shikken} which is a ``friendly''
 wrapper to the
 \href{http://www.shogun-toolbox.org/}{Shogun machine learning toolbox} --- a
-\code{C++} library focussed on large scale kernel methods (especially
+\texttt{C++} library focussed on large scale kernel methods (especially
 SVMs). We choose to use Shogun because it has a variety of string kernels
 implemented in a memory and speed efficient manner, which will prove
 useful in a variety of contexts that may arise when attempting to learn form
@@ -233,30 +276,50 @@ sequencing in your own research.
 \subsection{Kernels}
 \label{sub:kernels}
 
-Kernels project data into different spaces.
+Kernels project data into different spaces. The SVM can employ a kernel
+expansion
 
-<<label=easyClassificationProblem>>=
+\begin{equation}
+  f(x) = \sum_{i=1}^N \alpha_i y_i k({\bf x_i}, {\bf x}) + b
+\label{eqn:kernelexp}
+\end{equation}
+
+<<label=easyMargin,fig=TRUE,include=FALSE>>=
 set.seed(123)
 N <- 50
 
 ## easy to separate data
 X1 <- matrix(c(rep(2, N) + rnorm(N, 0.5), 1 + rnorm(N)), ncol=2)
 X2 <- matrix(c(rep(-2, N) - rnorm(N, 0.5), rnorm(N) -1), ncol=2)
-X <- rbind(X1, X2)
-
+X <- scale(rbind(X1, X2))
 y <- rep(c(1, -1), each=N)
-## simplePlot(X, y)
-lsvm <- showSVM(X, y, kernel="linear", C=10, use.bias=FALSE)
-# gsvm <- showSVM(X, y, kernel="gaussian", C=10, width=1)
+
+lsvm <- SVM(X, y, kernel="linear", C=10)
+table(predict(lsvm, X), y)
+
+plotDecisionSurface(lsvm, X, y)
 @
 
-Let's move the margin.
+And what happens when data moves closer to the margin?
 
-<<label=easyMoveMargin>>=
+<<label=easyMarginMove,fig=TRUE,include=FALSE>>=
 X.harder <- rbind(X, matrix(c(0, 0), ncol=2))
 y.harder <- c(y, 1)
-lsvm <- showSVM(X.harder, y.harder, kernel='linear', C=10)
+
+lsvm <- SVM(X.harder, y.harder, kernel="linear", C=10)
+table(predict(lsvm, X.harder), y.harder)
+
+plotDecisionSurface(lsvm, X.harder, y.harder)
 @
+
+\begin{figure}[htbp]
+  \centering  
+  \mbox{\subfigure{\includegraphics[width=3in]{MLplay-easyMargin.pdf}}\quad
+  \subfigure{\includegraphics[width=3in]{MLplay-easyMarginMove.pdf} }}
+  \caption{Finding the maximum margin hyperplane in shifting data}
+  \label{fig:easymargin}
+\end{figure}
+
 
 To extract the weight vector
 
@@ -267,33 +330,70 @@ To extract the weight vector
 
 @
 
-<<label=svmCircle>>=
+<<label=svmPoly,fig=TRUE,include=FALSE>>=
+## guts of makeCircle taken from plotrix package
 set.seed(123)
-Xcircle <- circle(0, 0, 5, nv=100)
+Xcircle <- makeCircle(0, 0, 5, nv=100)
 Xcircle <- cbind(Xcircle$x, Xcircle$y)
 Xinside <- matrix(rnorm(200), ncol=2)
 
 Xc <- rbind(Xcircle, Xinside)
 yc <- rep(c(1, -1), each=100)
 
-psvm <- showSVM(Xc, yc, kernel='poly', C=10, degree=2)
-psvm <- showSVM(Xc, yc, kernel='poly', C=10, degree=2, wireframe=TRUE)
+psvm <- SVM(Xc, yc, kernel="poly", C=10, degree=2)
+table(predict(psvm, Xc), yc)
 
-gsvm <- showSVM(Xc, yc, kernel='gaussian', C=1000, width=1)
-gsvm <- showSVM(Xc, yc, kernel='gaussian', C=1000, width=1, wireframe=TRUE)
+## Set wireframe=TRUE to see the decision surface in 3D
+plotDecisionSurface(psvm, Xc, yc, wireframe=FALSE)
 @
+
+<<label=svmPoly3D,fig=TRUE,include=FALSE,echo=FALSE>>=
+plotDecisionSurface(psvm, Xc, yc, wireframe=TRUE)
+@
+
+\begin{figure}[htbp]
+  \centering  
+  \mbox{\subfigure{\includegraphics[width=3in]{MLplay-svmPoly.pdf}}\quad
+  \subfigure{\includegraphics[width=3in]{MLplay-svmPoly3D.pdf} }}
+  \caption{Using a polynomial kernel to split data in a higher dimension}
+  \label{fig:polykernel}
+\end{figure}
+
+Look at what the decision surface does when you increase the value for
+\texttt{C} and set it to 10000. Can you intuitively describe why
+that happens?
+
+<<label=svmGaus,fig=TRUE,include=FALSE,echo=TRUE>>=
+gsvm <- SVM(Xc, yc, kernel="gaussian", C=1000, width=1)
+table(predict(psvm, Xc), yc)
+plotDecisionSurface(gsvm, Xc, yc, wireframe=FALSE)
+@
+
+<<label=svmGaus3D,fig=TRUE,include=FALSE,echo=FALSE>>=
+plotDecisionSurface(gsvm, Xc, yc, wireframe=TRUE)
+@
+
+\begin{figure}[htbp]
+  \centering  
+  \mbox{\subfigure{\includegraphics[width=3in]{MLplay-svmGaus.pdf}}\quad
+  \subfigure{\includegraphics[width=3in]{MLplay-svmGaus3D.pdf} }}
+  \caption{Using a gaussian kernel to split data in a higher dimension}
+  \label{fig:polykernel}
+\end{figure}
+
+
 
 %% <<label=svmDecision>>=
 %% ## Let's make 2D data from gaussians with different means
 %% set.seed(123)
-%% 
+%%
 %% Xgaus <- matrix(c(rnorm(2 * N, 1, 1), rnorm(2 * N, -1, 1)), ncol=2)
 %% simplePlot(Xgaus, y)
-%% 
+%%
 %% lsvm <- showSVM(Xgaus, y, kernel="linear", C=10)
 %% lacc <- sum(predict(lsvm, Xgaus) == y) / length(y)
 %% cat(sprintf("Linear svm accuracy: %.2f\n", lacc)
-%% 
+%%
 %% gsvm <- showSVM(Xgaus, y, kernel="gaussian", C=10, width=1)
 %% gacc <- sum(predict(gsvm, X) == y) / length(y)
 %% cat(sprintf("Gaussian svm accuracy: %.2f\n", gacc))
@@ -311,7 +411,8 @@ How do we project strings into a multi-dimensional space?
 \subsection{Spectrum Kernel}
 \label{sub:spectrum_kernel}
 
-Cite Christina
+The spectrum kernel.~\cite{Leslie:2002tx}
+Mismatch string kerenls~\cite{Leslie:2004kt}
 
 \begin{equation}
   k(x,x') = \sum_{u \in \Sigma^d} N(u, x) N(u, x')
@@ -335,14 +436,16 @@ TODO: Randomize promoters? reverse them, etc. does it still work?
 But, what is the SVM actually saying? We can obviously classify a promoter from
 background sequence, but how can we understand it?
 
-%% ----------------------------------------------------------------------------
-%% Feature selection with SVMs
-\subsubsection{Feature selection with SVMs}
-\label{ssub:feature_selection_with_svms}
+%% ============================================================================
+%% Feature Selection
+\subsection{Feature Selection}
+\label{sub:feature_selection}
 
 TODO: Extract ${\bf W}$ and visualize with \texttt{worcloud} and recursive
 feature elimination (RFE).
 
+Learning interpretable SVMs for biological sequence classification~\cite{Ratsch:2006il}.
+positional oligomer importance matrices (POIMs)~\cite{Sonnenburg:2008do}.
 
 
 The elastic net can do similar~\cite{Zou:2005elastic}.
@@ -357,7 +460,7 @@ The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in high
 
 Where does NOVA like to bind the pre-mRNA?
 
-<<label=novamm9distro>>=
+<<label=novamm9distro,fig=TRUE,include=TRUE>>=
 data(annotated.genomes)
 data(NOVA.mm9)
 

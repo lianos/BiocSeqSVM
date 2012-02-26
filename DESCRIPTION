@@ -6,7 +6,7 @@ Maintainer: Steve Lianoglou <slianoglou@gmail.com>
 Description: Pedagogical machine learning exercises for NGS data
 Depends: shikken, kernlab, caret, Biostrings, GenomicRanges, data.table
 LazyLoad: Yes
-Imports: methods, data.table, GenomicRanges, kernlab, Biostrings, sg
+Imports: methods, data.table, GenomicRanges, kernlab, Biostrings, sg, fields
 Suggests: testthat, roxygen2, org.Dm.eg.db, org.Mm.eg.db,
     BSgenome.Dmelanogaster.UCSC.dm3, BSgenome.Mmusculus.UCSC.mm9,
     TxDb.Dmelanogaster.UCSC.dm3.ensGene, TxDb.Mmusculus.UCSC.mm9.knownGene

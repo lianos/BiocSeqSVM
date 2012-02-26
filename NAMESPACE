@@ -5,12 +5,14 @@ import(GenomicRanges)
 import(Biostrings)
 import(kernlab)
 
+importFrom(fields, image.plot)
+
 export(
        simplePlot,
        showSVM,
+       plotDecisionSurface,
+       makeCircle,
        
        spectrumFeatures
        )
-
-
 

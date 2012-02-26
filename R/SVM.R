@@ -31,6 +31,86 @@ meshgrid <- function(a,b) {
   list(x=outer(b*0,a,FUN="+"), y=outer(b,a*0,FUN="+"))
 }
 
+plotDecisionSurface <- function(model, X, y, wireframe=FALSE) {
+  stopifnot(inherits(model, "SVM"))
+
+  xlim <- c(min(X[,1] - 1), max(X[,1] + 1))
+  ylim <- c(min(X[,2] - 1), max(X[,2] + 1))
+
+  x1 <- seq(xlim[1] - 1, xlim[2] + 1, length.out=100)
+  x2 <- seq(ylim[1] - 1, ylim[2] + 1, length.out=100)
+  Xtest <- meshgrid(x1, x2)
+  Xtest <- matrix(c(Xtest$x, Xtest$y), ncol=2)
+
+  ## Get the decision values from the SVM for the the test data.
+  out <- predict(model, Xtest, "decision")
+
+  ## Now it's time to make pretty things
+  z <- t(matrix(out, 100, 100))
+
+  if (wireframe) {
+    wf <- wireframe(z, shade = TRUE, aspect = c(61/87, 0.4),
+                    light.source=c(10,0,10))
+    print(wf)
+  } else {
+    cols <- terrain.colors(1000)
+
+    ## image(x1, x2, z, col=cols)
+    ## image.plot in fields package gives us a handy color bar/legend
+    image.plot(x1, x2, z, col=terrain.colors(50))
+    contour(x1, x2, z, add=TRUE)
+
+    ## Get indices to support vectors
+    svs <- SVindex(model)
+
+    posSVs <- X[y ==  1 & 1:nrow(X) %in% svs,, drop=FALSE]
+    negSVs <- X[y == -1 & 1:nrow(X) %in% svs,, drop=FALSE]
+
+    pos <- X[y ==  1 & !1:nrow(X) %in% svs, ]
+    neg <- X[y == -1 & !1:nrow(X) %in% svs, ]
+
+    matplot(posSVs[,1], posSVs[,2], pch="+", col="red", add=TRUE, cex=1.5)
+    matplot(negSVs[,1], negSVs[,2], pch="-", col="red", add=TRUE, cex=1.5)
+
+    matplot(pos[,1], pos[,2], pch="+", col="black",add=TRUE, cex=1)
+    matplot(neg[,1], neg[,2], pch="-", col="black",add=TRUE, cex=1)
+    title(paste("Decision surface for", model@kparams$key, "SVM"))
+  }
+
+  invisible(model)
+}
+
+## Taken from plotrix
+makeCircle <- function(x, y, radius, nv=100, border=NULL, col=NA, lty=1, lwd=1,
+                       do.plot=FALSE) {
+  if (do.plot) {
+    xylim <- par("usr")
+    plotdim <- par("pin")
+    ymult <- (xylim[4] - xylim[3])/(xylim[2] - xylim[1]) * plotdim[1]/plotdim[2]
+  } else {
+    ymult <- 1
+  }
+  angle.inc <- 2 * pi/nv
+  angles <- seq(0, 2 * pi - angle.inc, by = angle.inc)
+  if (length(col) < length(radius)) {
+    col <- rep(col, length.out = length(radius))
+  }
+
+  for (circle in 1:length(radius)) {
+    xv <- cos(angles) * radius[circle] + x
+    yv <- sin(angles) * radius[circle] * ymult + y
+    if (do.plot) {
+      polygon(xv, yv, border = border, col = col[circle], lty = lty,
+              lwd = lwd)
+    }
+  }
+
+  invisible(list(x = xv, y = yv))
+}
+
+################################################################################
+## Old
+
 ##' Plots the decision surface of an SVM on 2D data.
 ##'
 ##' Adapted from shogun-toolbox's svm_classification.R function found in
@@ -43,14 +123,14 @@ meshgrid <- function(a,b) {
 ##' @param .pacakge Either 'shikken' or 'kernlab' -- determines which
 ##' SVM package to use to build the classifier.
 showSVM <- function(X, y, kernel='linear', C=1, wireframe=FALSE, ...,
-                    .package=c("shikken", "kernlab")) {
-  .package <- match.arg(.package)
+                    pkg=c("shikken", "kernlab")) {
+  pkg <- match.arg(pkg)
   args <- list(...)
-  if (.package == "shikken") {
+  if (pkg == "shikken") {
     svmf <- SVM
     args$type <- NULL
     args <- c(list(X, y, kernel=kernel, C=C), args)
-  } else if (.package == "kernlab") {
+  } else if (pkg == "kernlab") {
     svmf <- ksvm
     if (kernel == 'linear') {
       kernel <- 'vanilla'
@@ -121,20 +201,3 @@ showSVM <- function(X, y, kernel='linear', C=1, wireframe=FALSE, ...,
   invisible(model)
 }
 
-## Taken from plotrix
-circle <- function(x, y, radius, nv=100, border=NULL, col=NA, lty=1, lwd=1) {
-  xylim <- par("usr")
-  plotdim <- par("pin")
-  ymult <- (xylim[4] - xylim[3])/(xylim[2] - xylim[1]) * plotdim[1]/plotdim[2]
-  angle.inc <- 2 * pi/nv
-  angles <- seq(0, 2 * pi - angle.inc, by = angle.inc)
-  if (length(col) < length(radius))
-    col <- rep(col, length.out = length(radius))
-  for (circle in 1:length(radius)) {
-    xv <- cos(angles) * radius[circle] + x
-    yv <- sin(angles) * radius[circle] * ymult + y
-    polygon(xv, yv, border = border, col = col[circle], lty = lty,
-            lwd = lwd)
-  }
-  invisible(list(x = xv, y = yv))
-}
