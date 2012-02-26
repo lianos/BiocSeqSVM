@@ -156,18 +156,39 @@ ML techniques to biology happened after the widespread adoption of microarrays.
 Microarrays make it easy for researchers to generate extremely high dimensional
 datasets produced by measuring the expression of thousands of genes at a single
 time point --- their interpretation, however, is often a challenge, and this is
-where the smart application of some ML techniques can really pay off.
+where the smart application of ML techniques can really pay off.
 
 %% ============================================================================
 %% Caveat emptor
 \subsection{Caveat emptor}
 \label{sub:caveat_emptor}
-This tutorial is not meant to serve as a general purpose introduction to
-machine learning concepts. Other tutorials are available that you can find online
-that can serve this purpose. In particular, the ML lab and slides prepared by
-Vincent Carey for the
-\href{http://www.bioconductor.org/help/course-materials/2011/CSAMA/}{CSAMA 2011 workshop}
-are worth exploring.
+
+\begin{itemize}
+  \item This tutorial is not meant to serve as a general purpose introduction to
+  machine learning concepts. Other tutorials are available that you can find online
+  that can serve this purpose. In the context of machine learning and R, these
+  will likely be helpful:
+  
+  \begin{itemize}
+    \item The \href{http://www.bioconductor.org/help/course-materials/2011/CSAMA/}{CSAMA 2011 workshop, machine learning primer} by Vincent Carey.
+    \item The \href{}{vignette from the caret package} by Max Kuhn.
+  \end{itemize}
+  
+  \item We will be exploring support vector machines through a new R library
+  I am authoring together called \href{https://gihub.com/lianos/shikken}{shikken}.
+  While there are several R libraries that provide an interface to SVMs, shikken
+  is a wrapper to the
+  \href{http://www.shogun-toolbox.org/}{Shogun machine learning toolbox}.
+  Shogun is a \texttt{C++} library focussed on large scale kernel methods and
+  has the largest variety of SVM solvers and kernel methods I have encountered
+  in one package. It also has a focus on kernel methods that are useful in
+  biology --- particularly ones that work on sequence features. My hope is that
+  being able to access Shogun's functionality through shikken will be helpful
+  since it provides an interface to Shogun that an R user will likely be more
+  comfortable with. See Section~\ref{sec:shogun} for more information about how
+  to use shikken effectively (ie. what bugs you should be looking out for!).
+\end{itemize}
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,81 +196,70 @@ are worth exploring.
 \section{Support Vector Machines and large margin classifiers}
 \label{sec:support_vector_machines}
 
-The Support Vector Machine (SVM) is a versatile and state-of-the-art classifier
-that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}. An
-advantageous property of SVMs, as shown in Figure~\ref{fig:svmdecision} is that
-they build large margin classifiers. This is important because these types of
-classifiers tend to generalized well to unseen data.
+[Note: the details and examples to illustrate the fundamentals of how SVMs
+work are largely taken and summarized from~\cite{BenHur:2008ec,BenHur:2009ch}]
 
-types of classifiers tend to generalize well to unseendAs
-compared to other types of classifiers, an advantage the SVM is that it builds
-a maximal margin (linear) classifiers that live in (extremely) high dimensional
-spaces. SVMs can use kernels to exploit the relationship between the features
-in your data in order to project it into a different (typically higher
-dimensional) space in order to find a separating hyperplane to split the data.
+The Support Vector Machine (SVM) is a versatile and state-of-the-art classifier
+that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}.
+An advantageous property of SVMs, as shown in Figure~\ref{fig:svmdecision} is that
+they build large margin linear classifiers that, typically, live in high
+dimensional spaces. The margin of a classifier is simply defined as the shortest
+distance from the decision boundary to the first training example. Large margin
+classifiers have the tendency to generalize well to unseen data --- intuitively
+because they provide more ``breathing room'' between the decision boundary and
+the next unseen data point you want to classify.
 
 \begin{figure}[htbp]
   \centering
     \includegraphics[scale=0.5]{figs/decision-boundaries.pdf}
   \caption{
     The anatomy of a decision boundary for a large (and soft) margin classifier.
-    The red, green, and blue decision boundaries in \textbf{A} all separate
-    the data equally well. The decision boundary found by the SVM in \textbf{B}
-    is defined by the direction and magnitude of its orthonormal vector $\vec{W}$.
-    This decision boundary is has the maximum margin in that it is equally distant
-    from the closest positive (filled) and negative (hollow) examples.
-    The examples with dark borders are the support vectors, which orient the 
-    direction of $\vec{W}$. The size of the margin for this classifier is identified
-    by the blue line. The red support vector is allowed to cross the margin,
-    and does not shift the decision boundary by paying a penalty that is proportional
-    to $\xi_i$. (Figure adapted form wikipedia)
+    \textbf{A} The red, green, and blue decision boundaries all separate the 
+    two-class training data (tgrey and white points) equally well.
+    equally well. The decision boundary found by the SVM has a \emph{large margin}
+    because the smallest distance to any training point is maximized. The example
+    outlined in red is ignored when defining the margin (the dashed lines), but the
+    machine pays a penalty that is proportional to the magnitude of the margin
+    violation $\xi_i$. The examples with dark borders are the support vectors, which
+    orient the direction of $\vec{W}$. The size of the margin for this classifier is
+    identified by the blue line.\footnote{
+      This figure was adapted from wikipedia:
+      \url{http://en.wikipedia.org/wiki/Support_vector_machine}
+    }
   }
   \label{fig:svmdecision}
 \end{figure}
 
-The margin of a linear classifier is defined as the distance of the closest point
-to the decision boundary --- SVMs build classifiers that maximize this distance.
+To find the large margin decision boundary, the SVM solves the following
+convex optimization problem:
 
-The idea of the maximum margin is shown in~Figure\ref{fig:svmdecision}.
-
-Details of the optimization problem are summarized from~\cite{BenHur:2008ec}
-
-The hard margin SVM optimizes the following function:
-
-
-
-\begin{align}
-  \min_{ {\bf w}, b} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 \nonumber \\
-  \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 \nonumber \\
-  \mbox{for } i = 1 \dots n
-\label{eqn:primal}
-\end{align}
-
-The constraints in equation~\ref{eqn:primal} ensure that the examples are
-correctly classified and minimizing $\| {\bf w} \|^2$ is equivalent to
-maximizing the margin. In practice, data are often not cleanly separable.
-The idea of a soft margin was introduce to accommodate these problems. The
-soft margin allows the classifier to misclassify some examples in order keep
-the margin large. Soft margin classifiers typically provide better performance
-than hard margin SVMs. To allow for errors, \emph{slack variables} ($\xi_i$)
-are introduced into the inequality constraint in Equation~\ref{eqn:primal}
-to permit examples to lie within the margin or to be misclassified. To
-discourage excess use of slack variables, a cost parameter $C$ is also
-introduced. The soft margin optimization function follows:
+% Hard margin primal
+% \begin{align}
+%   \min_{ {\bf w}, b} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 \nonumber \\
+%   \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 \nonumber \\
+%   \mbox{for } i = 1 \dots n
+% \label{eqn:primal}
+% \end{align}
 
 \begin{align}
   \min_{ {\bf w}, b, \xi} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 + C \sum_{i=1}^n \xi_i \nonumber \\
   \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 - \xi_i, \nonumber \\
   \xi_i \ge 0, \mbox{for } i = 1 \dots n
-\label{eqn:soft}
+\label{eqn:softmargin}
 \end{align}
 
+Minimizing $\| {\bf w} \|^2$ in Equation~\ref{eqn:softmargin} is equivalent
+to maximizing the margin. The inequality constraints on the second line
+ensure that the examples are correctly classified
+($y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1$).
+It is often the case, however, that data is not cleanly separable and the
+\emph{slack variables} $\xi_i$ are introduced to accommodate these situations.
+The slack variables permit examples to lie within the margin or to be
+misclassified while still finding a large margin over the rest of the training
+data. To discourage excess use of slack variables, a cost parameter
+$C$ is also introduced.
 
-% \begin{equation}
-%   \min_{ {\bf w}, b} \max_{\alpha} \left\{ \frac{1}{2} \| {\bf w} \|^2 - \sum_{i=1}^n \alpha_i [ y_i ({\bf w} \cdot {\bf x}_i - b) - 1] \right\}
-% \label{eqn:primal}
-% \end{equation}
-
+Details of the optimization problem are summarized from
 
 
 One particular drawback of SVMs is that even though they can
@@ -259,7 +269,7 @@ to open the ``black box'' of your classifier in this vignette as well.
 
 Other SVM tutorials:
 What is a support vector machine~\cite{Noble:2006br}
-SVMs and kernels for computational biology~\cite{BenHur:2008ec}
+SVMs and kernels for computational biology~\cite{BenHur:2008ec,}
 %%to SVMs
 %%   - Show primal
 %%   - Show image of what it means to be a large margin classifier
