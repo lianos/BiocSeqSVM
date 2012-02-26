@@ -301,8 +301,8 @@ gsvm <- showSVM(Xc, yc, kernel='gaussian', C=1000, width=1, wireframe=TRUE)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Classification on Strings
-\section{Classification on Strings}
-\label{sec:classification_on_strings}
+\section{Classification on strings using the spectrum kernel}
+\label{sec:spectrum}
 
 How do we project strings into a multi-dimensional space?
 
@@ -332,7 +332,18 @@ X.proms <- spectrumFeatures(promoters, degree=4)
 
 TODO: Randomize promoters? reverse them, etc. does it still work?
 
-TODO: Extract ${\bf W}$ and visualize with \texttt{worcloud}.
+But, what is the SVM actually saying? We can obviously classify a promoter from
+background sequence, but how can we understand it?
+
+%% ----------------------------------------------------------------------------
+%% Feature selection with SVMs
+\subsubsection{Feature selection with SVMs}
+\label{ssub:feature_selection_with_svms}
+
+TODO: Extract ${\bf W}$ and visualize with \texttt{worcloud} and recursive
+feature elimination (RFE).
+
+
 
 The elastic net can do similar~\cite{Zou:2005elastic}.
 TODO: Show same example using \texttt{glmnet}.
@@ -342,10 +353,9 @@ TODO: Show same example using \texttt{glmnet}.
 \subsection{Characterize NOVA binding sites}
 \label{sub:characterize_nova_binding_sites}
 
-Try to use a spectrum kernel to identify preferred binding landscape of
-\emph{NOVA-1/2} RNA binding protein.
+The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
 
-Where does it like to bind?
+Where does NOVA like to bind the pre-mRNA?
 
 <<label=novamm9distro>>=
 data(annotated.genomes)
@@ -365,8 +375,20 @@ g <- ggplot(nova.summary, aes(x=exon.anno, y=score, fill=exon.anno)) +
 print(g)
 @
 
+Try to use a spectrum kernel to identify preferred binding landscape of
+\emph{NOVA-1/2} RNA binding protein.
+
+
 %% ============================================================================
-%% Apply NOVA binding model to Drosophila homolog
+%% Training
+\subsection{Training}
+\label{sub:training}
+
+%% ============================================================================
+%% Testing
+\subsection{Testing}
+\label{sub:testing}
+
 
 %% ============================================================================
 %% Apply NOVA binding model to Drosophila homolog
@@ -374,27 +396,24 @@ print(g)
 \label{sub:apply_nova_binding_model_to_drosophila_homolog}
 
 
+%% ============================================================================
+%% Using multitask learning to combine datasets
+\subsection{Using multitask learning to combine datasets}
+\label{sub:using_multitask_learning_to_combine_datasets}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Motivation
-\section{Motivation}
-\label{sec:motivation}
-The RNA binding protein (RBP) known as \emph{NOVA-1} (and \emph{NOVA-2}) in higher eukaryotes, and pasilla (ps) in fly, has been previously implicated in playing a role in the regulation of alternative splicing.
+%% Higher resolution sequence kernels
+\section{Higher resolution sequence kernels}
+\label{sec:higher_resolution_sequence_kernels}
 
+The spectrum kernel has no concept of position --- a kmer gets the same weight
+if it appears at the beginning of a string or at the end.
 
-
-%% ----------------------------------------------------------------------------
-%% Spectrum Kernel
-\subsubsection{Spectrum Kernel} % (fold)
-\label{ssub:spectrum_kernel}
-
-
-
-%% ----------------------------------------------------------------------------
+%% ============================================================================
 %% Weighted Degree Kernel
-\subsubsection{Weighted Degree Kernel}
-\label{ssub:weighted_degree_kernel}
+\subsection{Weighted Degree Kernel}
+\label{sub:weighted_degree_kernel}
 
 The \emph{weighted degree} (WD) kernel computes similarities between
 sequences while taking positional information into account. The WD kernel
@@ -417,10 +436,10 @@ of the two sequences being compared.
 \end{equation}
 
 
-%% ----------------------------------------------------------------------------
+%% ============================================================================
 %% Weighted Degree Kernel with Shifts
-\subsubsection{Weighted Degree Kernel with Shifts}
-\label{ssub:weighted_degree_kernel_with_shifts}
+\subsection{Weighted Degree Kernel with Shifts}
+\label{sub:weighted_degree_kernel_with_shifts}
 
 The weighted degree kernel with shifts (the WDS kernel) shifts the two
 sequences against each other in order to allow for small positional variations
@@ -440,51 +459,13 @@ kernels.
 \end{figure}
 
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Learning preferred binding landscapes
-\section{Learning preferred binding landscapes}
-\label{sec:learning_preferred_binding_landscapes}
-
-
-%% ============================================================================
-%% Feature selection
-\subsection{Feature selection}
-\label{sub:feature_selection}
-
-
-%% ============================================================================
-%% Training
-\subsection{Training}
-\label{sub:training}
-
-
-
-%% ============================================================================
-%% Testing
-\subsection{Testing}
-\label{sub:testing}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Applying model on novel organism
-\section{Applying model on novel organism}
-\label{sec:applying_model_on_novel_organism}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Unsupervised learning with NFM
-\section{Unsupervised learning with Nonnegative Matrix Factorization}
-\label{sec:unsupervised_learning_with_nonnegative_matrix_factorization}
-Non-negative matrix factorization
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Future things to explore
 \section{Future things to explore}
 \label{sec:future}
+
+Multiple kernel learning.
+
 Novel Machine Learning Methods for MHC Class I Binding Prediction
 http://www.fml.tuebingen.mpg.de/raetsch/members/raetsch/bibliography/WTAKR2010
 http://www.fml.tuebingen.mpg.de/raetsch/lectures/talk-multitask-recomb2010.pdf
