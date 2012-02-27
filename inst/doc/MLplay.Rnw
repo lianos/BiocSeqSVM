@@ -109,7 +109,12 @@ The goal of this tutorial is to provide a brief and intuitive introduction to
 some machine learning techniques --- primarily support vector machines. Some
 mathematical rigor will likely be sacrificed in order to appeal to intuition.
 Technical concepts will be followed closely by practical examples in R to help
-shed light on things that may at first seem to be too abstract.
+shed light on things that may at first seem to be too abstract. I will spend a
+fair bit of time on the introduction because I think it is rather important to
+understand. Often times, the ML approaches you apply will not work the first time
+you try them. Getting things to work as you like will require (1) picking the
+right data and carefully scrubbing it; and (2) understanding how your learning
+algorithm functions, so you can better accomplish (1).
 
 We will introduce string kernels and show how they can be used to learn from
 sequencing data. An example of how one can begin to use them with HITS-CLIP
@@ -124,8 +129,6 @@ This document and package made its initial debut as a tutorial given at the
 hosted at the Fred Hutchinson Cancer Research Center in February, 2012. It will
 continue to live (and receive updates) at the github repository listed below
 in the hope that others may find it useful as a resource to learn from.
-
-Questions and comments are encouraged.
 
 \begin{center}
   \url{https://github.com/lianos/BiocSeqSVM}
@@ -229,13 +232,13 @@ generalize well to unseen data --- intuitively because they provide more
 ``breathing room'' between the decision boundary and the next unseen data point
 you want to classify. The SVM finds the optimal decision boundary by minimizing
 $\| {\bf w} \|^2$ in the convex optimization problem shown in
-Equation~\ref{eqn:softmargin}, and depicted in Figure~\ref{fig:svmdecision}.
+Equation~\ref{eqn:primal}, and depicted in Figure~\ref{fig:svmdecision}.
 
 \begin{align}
   \min_{ {\bf w}, b, \xi} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 + C \sum_{i=1}^n \xi_i \nonumber \\
   \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 - \xi_i, \nonumber \\
   \xi_i \ge 0, \mbox{for } i = 1 \dots n
-\label{eqn:softmargin}
+\label{eqn:primal}
 \end{align}
 
 
@@ -252,17 +255,15 @@ Equation~\ref{eqn:softmargin}, and depicted in Figure~\ref{fig:svmdecision}.
     the smallest distance to any training point is maximized. The example training
     point outlined in red is ignored when defining the margin (the dashed lines), but the
     machine pays a penalty that is proportional to the magnitude of the margin
-    violation $\xi_i$. The examples with dark borders are the support vectors, which
-    orient the direction of $\vec{W}$. The size of the margin for this classifier is
-    identified by the blue line. This figure was adapted from the Wikipedia page about
-    \href{http://en.wikipedia.org/wiki/Support_vector_machine}{Support vector machines}
-    on 2012-02-22.
-    }
+    violation $\xi_i$. The examples with dark borders are the \emph{support vectors},
+    which will ultimately orient the direction of $\vec{W}$. The size of the margin for
+    this classifier is identified by the blue line. This figure was adapted from the
+    Wikipedia's \href{http://en.wikipedia.org/wiki/Support_vector_machine}{Support vector machines} page on 2012-02-22.
   }
   \label{fig:svmdecision}
 \end{figure}
 
-Minimizing $\| {\bf w} \|^2$ in Equation~\ref{eqn:softmargin} is equivalent
+Minimizing $\| {\bf w} \|^2$ in Equation~\ref{eqn:primal} is equivalent
 to maximizing the margin. The inequality constraints on the second line
 ensure that the examples are correctly classified
 ($y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1$).
@@ -280,7 +281,12 @@ explain how to do this later in Section~\ref{sec:model_refinement}.
 
 Let's fire up \texttt{R} and create a dataset that almost looks like that data in
 Figure~\ref{fig:svmdecision} so we can see how to classify it using the
-SVM methods available in shikken.
+SVM methods available in shikken
+\footnote{
+  You can also use SVMs in \textbf{R} with the \texttt{e1071} and \texttt{kernlab}
+  packages. \texttt{kernlab} also has an implementation of the spectrum kernel
+  you can use.
+}.
  
 <<initialize, results=hide, echo=TRUE, eval=TRUE>>=
 library(BiocSeqSVM)
@@ -301,7 +307,7 @@ y <- rep(c(1, -1), each=N)
 To use an SVM to clasify a dataset, shikken provides the \texttt{SVM}
 method which accepts a dataset \texttt{x} of observations (rows), and
 a label vector \texttt{y}. The \texttt{C} parameter is the same $C$
-described in Formula~\ref{eqn:softmargin}, ie. the cost for non-zero
+described in Formula~\ref{eqn:primal}, ie. the cost for non-zero
 slack variables.
 
 <<label=easyMargin,fig=TRUE,include=FALSE>>=
@@ -323,7 +329,8 @@ When the SVM produces a high (absolute) decision value, you can think of
 it as giving a high-confidence prediction of the class label. Positive
 decision values belong to one class, negative values belong to the other.
 
-\paragraph{Question} \emph{What happens to the decision boundary and support vectors
+\paragraph{Question}
+\emph{What happens to the decision boundary and support vectors
 when we decrease the value of $C$ to either $0.5$ or $0.1$.
 Why does that happen?}
 
@@ -356,9 +363,11 @@ table(predict(lsvm, X.out), y.out)
 The SVM is doing its job and classifying the data perfectly, but is this
 desirable?
 
-\paragraph{Question} \emph{What should we do instead?
-Is the best classifier you can build the
-one that always classifies your training data perfectly?}
+\paragraph{Questions}
+\emph{What is wrong, if anything, with the this decision boundary?
+How can we fix it?
+Is the best classifier you can build the one that always classifies your
+training data perfectly?}
 
 <<label=easySoftMargin,echo=FALSE,include=FALSE,fig=TRUE>>=
 lsvm <- SVM(X.out, y.out, C=1)
@@ -408,49 +417,89 @@ simplePlot(Xc, yc)
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[scale=.2]{Rfigs/gen-circleData}
+    \includegraphics[scale=.1]{Rfigs/gen-circleData}
   \caption{Data that is not linearly separable.}
   \label{fig:circledata}
 \end{figure}
 
-There is a \emph{dual} formulation of the SVM objective function that uses
-Lagrange multipliers and its optimal value is the same as the primal
-one under certain constraints. The derivation of the dual from the primal
-is skipped here (for more details, the reader can reference one of many
-SVM tutorials). The final equation is listed in Equation~\ref{eqn:dual}. Note
-that in the dual, the SVM optimization depends on the inputs ${\bf x})i$
-only through their dot products, which allows the algorithm to be
-\emph{kernelized}:
-
-\begin{align}
-  \max_a \sum_{i=1}^n \alpha_i - \frac {1} {2} \sum_{i=1}^n \sum_{j=1}^n y_i y_j \alpha_i \alpha_j \left\langle {\bf x}_i, {\bf x}_j \right\rangle \nonumber  \\
-  \mbox{s.t : } \sum_{i=1}^n y_i \alpha_i = 0; \mbox{ } 0 \leq a_o \leq C
-\label{dual}
-\end{align}
-
-The weight vector ${\bf w}$ can be expressed by the examples ${\bf x}_i$ and
-their weights $\alpha_i$ as shown in Figure~\ref{fig:wvector}. The examples which have $\alpha_i > 0$ are called the \emph{support vectors}, which lie on (or within)
-the margin (these are the red examples shown in the \texttt{plotDecisionSurface})
-function.
-
-\begin{alpha}
-  {\bf w} = \sum_{i=1}^n \y_i alpha_i {\bf x}_i
-\end{alpha}
-
-Using kernels, a linear classifier can generate non-linear decision boundaries.
-This is accomplished by mapping the data to another (typically higher dimension)
-feature space using a function $\phi$. The discriminant function is then:
+A reasonable way to split the data in Figure~\ref{fig:circledata} is to
+project it into a higher dimensional space where it can then be
+cleanly separated by a simple line (hyperplane) in that new space.
+At first blush, a naive way to do this is to explicitly project
+every data point into the new space and just find the hyperplane
+like ``you normally would.'' Your ${\bf w}$ vector would then 
+also be living in this space and your new discriminant function would
+then look like what is shown in Equation~\ref{eqn:phidisc}.
 
 \begin{align}
   f(x) = \left\langle {\bf w}, \phi ({\bf x}) \right\rangle + b
 \label{eqn:phidisc}
 \end{align}
 
-$f(x)$ is linear in the feature space defined by the mapping function $\phi$,
-but can look non-linear when projected back down to the original feature space.
+There is a smarter way to go, and it involves using kernels and
+``the kernel trick''. You can think of a kernel function
+$k({\bf x}, {\bf x'}) \ge 0$ as one that takes two examples
+and returns a real-valued number that tells you how similar the two
+data points are (higher is more similar).
 
-\paragraph{Important} A, perhaps non-obvious, advantage of measuring relationships
-between examples through kernel functions is that we often do not have to
+Now we have to travel into the weeds a bit ...
+
+There is a \emph{dual} formulation of the SVM objective function that
+uses Lagrange multipliers to make the optimization problem of the \emph{primal}
+(Equation~\ref{eqn:prmial}) easier to solve (apparently!).
+Its optimal value is the same as the primal one under certain
+constraints\cite{BenHur:2008ec}. To help keep
+our sanity, the derivation of the dual from the primal is skipped here,
+but can be found in other SVM references~\footnote{If you're interested
+in the punishment, Andrew Ng has his course materials for the ML class
+he teaches at Stanford online. His notes on SVMs actually have a nice
+description of how this is done.} The dual representation is given in
+Equation~\ref{eqn:dual}.
+
+\begin{align}
+  \max_a \sum_{i=1}^n \alpha_i - \frac {1} {2} \sum_{i=1}^n \sum_{j=1}^n y_i y_j \alpha_i \alpha_j \left\langle {\bf x}_i, {\bf x}_j \right\rangle \nonumber  \\
+  \mbox{s.t : } \sum_{i=1}^n y_i \alpha_i = 0; \mbox{ and } 0 \leq a_o \leq C
+\label{dual}
+\end{align}
+
+It can also be shown that the weight vector ${\bf w}$ can be
+expressed solely as a function over the examples ${\bf x}_i$ and their optimal values of $\alpha_i$ (found in Equation~\ref{eqn:dual}), as shown in Equation~\ref{eqn:wvector}.
+
+\begin{align}
+  {\bf w} = \sum_{i=1}^n y_i \alpha_i {\bf x}_i
+\label{eqn:wvector}
+\end{align}
+
+Our discriminant function is therefore:
+
+\begin{align}
+  f({\bf x}) = \sum_{i=1}^n y_i \alpha_i k({\bf x_i}, {\bf x}) + b
+\end{align}
+
+The SVM will try to set many of the $\alpha_i$ values to 0, which will give
+us a sparse \emph{representation} of ${\bf w}$ using only the examples where
+$\alpha_i > 0$ --- these examples are called the \emph{support vectors} and lie on
+(or within) the margin. The support vectors are the red examples shown in the \texttt{plotDecisionSurface}) function.
+
+
+Now, we're trying to drive to the point that we can use a linear classifier to
+classify non-separable data by projecting the data into a higher dimensional
+space. We can naively do this by 
+
+Using kernels, a linear classifier can generate non-linear decision boundaries.
+This is accomplished by mapping the data to another (typically higher dimension)
+feature space 
+
+$f(x)$ is linear in the feature space defined by the mapping function $\phi$,
+but can look non-linear when projected back down to the original feature space,
+as shown in Figures~\ref{fig:polykernel}, and ~\ref{fig:gausskernel}.
+
+Note that in the dual, the SVM optimization depends on the inputs ${\bf x}_i$
+only through their dot products, which allows the algorithm to be
+\emph{kernelized}.
+
+\paragraph{Important} An advantage of measuring relationships between examples
+through kernel functions is that we often do not have to
 explicitly map examples into the higher dimensional feature space to calculate their similarity. Their projection can be implicit, which can provide large memory and 
 computational cost gains. Refer to the polynomial kernel example below.
 
@@ -569,13 +618,20 @@ in Figure~\ref{fig:spectrum}
     \includegraphics[scale=1]{figs/spectrum-kernel}
   \caption{
     Calculating the spectrum kernel, with and without mismatches.
-    A naive way to calculate the spectrum kernel of degree 2 is shown.
+    A naive way to calculate the spectrum kernel of degree 2 is to
+    create a vector of length $4^2 = 16$ which is used to count the number
+    of occurrences of each $k$-mer in the string.
     A sliding window (red box) equal to length as the degree of the kernel
-    slides along the string. The exact $k$-mers are counted as they appear
-    (above). We can allow for a mismatch by incrementing the count of all
-    of the kmers in an $N$-mismatch neighborhood around the current $k$-mer
-    in the window (below). The kernel function to compare two strings
-    is simply an inner product of their vector representations.
+    slides along the string.
+    The counts of exact $k$-mers are incremented as they appear in the window
+    (above). Mismatches can be accommodated by
+    incrementing the count of all of the $k$-mers in the $N$-mismatch
+    neighborhood around the current $k$-mer in the window (below, $N=1$).
+    The final kernel evaluation between two strings is simply the
+    dot product of their vector representations.
+    The red arrow above the box points in the direction the window is sliding.
+    The black arrows point to the bins that have just been incremented
+    by observing the $k$-mer in the window.
   }
   \label{fig:spectrum}
 \end{figure}
