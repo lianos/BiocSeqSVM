@@ -226,9 +226,9 @@ you want to classify.
     machine pays a penalty that is proportional to the magnitude of the margin
     violation $\xi_i$. The examples with dark borders are the support vectors, which
     orient the direction of $\vec{W}$. The size of the margin for this classifier is
-    identified by the blue line.\footnote{
-      This figure was adapted from wikipedia:
-      \url{http://en.wikipedia.org/wiki/Support_vector_machine} [2012-02-22]
+    identified by the blue line. This figure was adapted from the Wikipedia page about
+    \href{http://en.wikipedia.org/wiki/Support_vector_machine}{Support vector machines}
+    on 2012-02-22.
     }
   }
   \label{fig:svmdecision}
@@ -273,7 +273,7 @@ Figure~\ref{fig:svmdecision} so we can see how to classify it using the
 SVM methods available in shikken.
  
 <<initialize, results=hide, echo=TRUE, eval=TRUE>>=
-library(MLplay)
+library(BiocSeqSVM)
 library(shikken)
 
 ## Create two clas data
@@ -513,9 +513,9 @@ How do we project strings into a multi-dimensional space?
 The spectrum kernel.~\cite{Leslie:2002tx}
 Mismatch string kerenls~\cite{Leslie:2004kt}
 
-\begin{equation}
+\begin{align}
   k(x,x') = \sum_{u \in \Sigma^d} N(u, x) N(u, x')
-\end{equation}
+\end{align}
 
 where $N(u,x)$ is the function that returns the number of occurrences of kmer
 $u$ in the string $x$. An intuitive representation of the kernel kernel is shown
@@ -523,7 +523,7 @@ in Figure~\ref{fig:spectrum}
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[scale=1]{figs/spcectrum}
+    \includegraphics[scale=1]{figs/spectrum-kernel}
   \caption{
     Calculating the spectrum kernel, with and without mismatches.
     A naive way to calculate the spectrum kernel of degree 2 is shown.
@@ -533,7 +533,6 @@ in Figure~\ref{fig:spectrum}
     of the kmers in an $N$-mismatch neighborhood around the current $k$-mer
     in the window (below). The kernel function to compare two strings
     is simply an inner product of their vector representations.
-    
   }
   \label{fig:spectrum}
 \end{figure}
@@ -544,11 +543,11 @@ in Figure~\ref{fig:spectrum}
 <<label=promoters>>=
 data(promoters, package="shikken")
 head(promoters)
-X.prom <- spectrumFeatures(promoters, degree=4)
-y.prom <- values(promoters)$class
+# X.prom <- spectrumFeatures(promoters, degree=4)
+# y.prom <- values(promoters)$class
 
-ssvm <- SVM(X.prom, y.prom, kernel='linear')
-table(predict(ssvm, X.proms), pr.class)
+# ssvm <- SVM(X.prom, y.prom, kernel='linear')
+# table(predict(ssvm, X.proms), pr.class)
 @
 
 It is clear that we can classify the promoters correctly using a spectrum
@@ -563,7 +562,7 @@ There might be some interesting biology there.
 \subsection{Feature Selection}
 \label{sub:feature_selection}
 
-TODO: Extract ${\bf W}$ and visualize with \texttt{worcloud} and recursive
+TODO: Extract ${\bf W}$ and visualize with \texttt{wordcloud} and recursive
 feature elimination (RFE).
 
 Learning interpretable SVMs for biological sequence classification~\cite{Ratsch:2006il}.
@@ -578,15 +577,7 @@ TODO: Show same example using \texttt{glmnet}.
 \subsection{Cross validation}
 \label{sub:cross_validation}
 
-Randomize the labels and try again -- can the SVM learn a perfect classifier?
-<<label=randomPromoter>>=
-y.rand <- sample(y.prom)
-rsvm <- SVM(promoters, y.rand, kernel='spectrum', degree=4)
-table(predict(rsvm, promoters), y.prom)
-
-rsvm <- SVM(promoters, y.rand, kernel='spectrum', degree=8)
-table(predict(rsvm, promoters), y.prom)
-@
+Use \texttt{caret,createFolds function}. TODO: Cross Validation
 
 %% ============================================================================
 %% Characterize NOVA binding sites
@@ -602,10 +593,8 @@ data(annotated.genomes)
 data(NOVA.mm9)
 
 head(nova.peaks)
-
-nova.summary <- data.table(as.data.frame(nova.peaks))[, {
-  list(score=sum(score))
-}, by="exon.anno"]
+dt <- data.table(as.data.frame(nova.peaks))
+nova.summary <- dt[, list(score=sum(score)), by='exon.anno']
 
 gg.angle <- opts(axis.text.x=theme_text(angle=-45, hjust=0, vjust=1))
 
@@ -624,23 +613,27 @@ Try to use a spectrum kernel to identify preferred binding landscape of
 \subsection{Training}
 \label{sub:training}
 
+training splits
+
 %% ============================================================================
 %% Testing
 \subsection{Testing}
 \label{sub:testing}
-
+testing splits
 
 %% ============================================================================
 %% Apply NOVA binding model to Drosophila homolog
 \subsection{Apply NOVA binding model to Drosophila homolog}
 \label{sub:apply_nova_binding_model_to_drosophila_homolog}
 
+Hit ps data
 
 %% ============================================================================
 %% Using multitask learning to combine datasets
 \subsection{Using multitask learning to combine datasets}
 \label{sub:using_multitask_learning_to_combine_datasets}
 
+multitask learning
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Higher resolution sequence kernels
@@ -671,9 +664,9 @@ of the two sequences being compared.
   \label{fig:WDK}
 \end{figure}
 
-\begin{equation}
+\begin{align}
   k(x,x') = \sum_{k=1}^d \beta_k \sum_{i=1}^{l-k+1} \hbox{I}(u_{k,i}(x) = u_{k,i}(x'))
-\end{equation}
+\end{align}
 
 
 %% ============================================================================
@@ -704,11 +697,14 @@ kernels.
 \section{Future things to explore}
 \label{sec:future}
 
-Multiple kernel learning.
+\begin{itemize}
+  \item Multiple kernel learning
+  \item Multitask learning
+\end{itemize}
 
-Novel Machine Learning Methods for MHC Class I Binding Prediction
-http://www.fml.tuebingen.mpg.de/raetsch/members/raetsch/bibliography/WTAKR2010
-http://www.fml.tuebingen.mpg.de/raetsch/lectures/talk-multitask-recomb2010.pdf
+% Novel Machine Learning Methods for MHC Class I Binding Prediction
+% http://www.fml.tuebingen.mpg.de/raetsch/members/raetsch/bibliography/WTAKR2010
+% http://www.fml.tuebingen.mpg.de/raetsch/lectures/talk-multitask-recomb2010.pdf
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
