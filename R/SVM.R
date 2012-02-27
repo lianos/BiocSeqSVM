@@ -33,7 +33,10 @@ meshgrid <- function(a,b) {
 
 plotDecisionSurface <- function(model, X, y, wireframe=FALSE) {
   stopifnot(inherits(model, "SVM"))
-
+  
+  opars <- par()
+  on.exit(par(opars))
+  
   xlim <- c(min(X[,1] - 1), max(X[,1] + 1))
   ylim <- c(min(X[,2] - 1), max(X[,2] + 1))
 

@@ -227,8 +227,8 @@ you want to classify.
     violation $\xi_i$. The examples with dark borders are the support vectors, which
     orient the direction of $\vec{W}$. The size of the margin for this classifier is
     identified by the blue line.\footnote{
-      This figure was adapted from wikipedia (2012-02-22):
-      \url{http://en.wikipedia.org/wiki/Support_vector_machine}
+      This figure was adapted from wikipedia:
+      \url{http://en.wikipedia.org/wiki/Support_vector_machine} [2012-02-22]
     }
   }
   \label{fig:svmdecision}
@@ -375,31 +375,22 @@ plotDecisionSurface(lsvm, X.out, y.out)
 \section{Kernels}
 \label{sec:kernels}
 
+As we saw in the previous example, not all data is well behaved --- meaning
+that it is not easy to find a linear separator that can split your two classes
+of data. Still, the challenge of dealing with outliers was one that the SVM
+seemed to handle quite easily. But what happens if your data is really
+impossible to split?
 
+<<label=circleData,fig=TRUE,include=TRUE>>=
+Xcircle <- makeCircle(0, 0, 5, nv=100)
+Xcircle <- cbind(Xcircle$x, Xcircle$y)
+Xinside <- matrix(rnorm(200), ncol=2)
 
-Details of the optimization problem are summarized from
+Xc <- rbind(Xcircle, Xinside)
+yc <- rep(c(1, -1), each=100)
 
-
-One particular drawback of SVMs is that even though they can
-produce highly accurate classification machines, the interpretation of the
-classifiers you can build can prove difficult. We will discuss some ways
-to open the ``black box'' of your classifier in this vignette as well.
-
-Other SVM tutorials:
-What is a support vector machine~\cite{Noble:2006br}
-SVMs and kernels for computational biology~\cite{BenHur:2008ec,}
-%%to SVMs
-%%   - Show primal
-%%   - Show image of what it means to be a large margin classifier
-%%   - Mention kernel trick
-%%     This let's us measure differences between samples in different feature
-%%     spaces more naturally.
-
-
-%% ============================================================================
-%% Kernels
-\subsection{Kernels}
-\label{sub:kernels}
+simplePlot(Xc, yc)
+@
 
 Using kernels, a linear classifier can generate non-linear decision boundaries.
 This is accomplished by mapping the data to another (typically higher dimension)
@@ -425,45 +416,30 @@ gains. Refer to the polynomial kernel example below.
 \label{eqn:kernelexp}
 \end{equation}
 
-%% ============================================================================
-%% SVMs in R
-\subsection{SVMs in R}
-\label{sub:svms_in_r}
+TODO: Dual
 
-The are several interfaces to SVMs that already exist in \texttt{R}, namely
-the \href{http://cran.r-project.org/web/packages/kernlab/}{kernlab}
-and \href{http://cran.r-project.org/web/packages/e1071}{e1071} packages.
-This tutorial, however, will introduce a new SVM package named
-\href{http://lianos.github.com/shikken/}{shikken} which is a ``friendly''
-wrapper to the
-\href{http://www.shogun-toolbox.org/}{Shogun machine learning toolbox} --- a
-\texttt{C++} library focussed on large scale kernel methods (especially
-SVMs). We choose to use Shogun because it has a variety of string kernels
-implemented in a memory and speed efficient manner, which will prove
-useful in a variety of contexts that may arise when attempting to learn form
-sequencing in your own research.
-
-
-
-To extract the weight vector
+To extract the ${\bf w}$ weight vector:
 
 \begin{equation}
   {\bf W} = \sum_{i=1}^N \alpha_i y_i {\bf x}_i
 \label{eqn:wvector}
 \end{equation}
 
-@
+%% ============================================================================
+%% Numeric Kernels
+\subsection{Numeric Kernels}
+\label{sub:numeric_kernels}
+
+\paragraph{Polynomial kernel}
+\label{par:polynomial_kernel}
+
+\begin{align}
+  k_{d,k}^{\mbox{polynomial }} ({\bf w}, {\bf w'}) = \left( \left\langle {\bf w}, {\bf w'} \right\rangle + k \right)^d
+\label{eqn:polykernel}
+\end{align}
 
 <<label=svmPoly,fig=TRUE,include=FALSE>>=
 ## guts of makeCircle taken from plotrix package
-set.seed(123)
-Xcircle <- makeCircle(0, 0, 5, nv=100)
-Xcircle <- cbind(Xcircle$x, Xcircle$y)
-Xinside <- matrix(rnorm(200), ncol=2)
-
-Xc <- rbind(Xcircle, Xinside)
-yc <- rep(c(1, -1), each=100)
-
 psvm <- SVM(Xc, yc, kernel="poly", C=10, degree=2)
 table(predict(psvm, Xc), yc)
 
@@ -479,13 +455,25 @@ plotDecisionSurface(psvm, Xc, yc, wireframe=TRUE)
   \centering  
   \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-svmPoly.pdf}}\quad
   \subfigure{\includegraphics[width=3in]{Rfigs/gen-svmPoly3D.pdf} }}
-  \caption{Using a polynomial kernel to split data in a higher dimension}
+  \caption{
+    Using a 2nd degree polynomial kernel to find a large margin separating
+    hyperplane in three dimensions. The decision surface is shown in
+    both two (left) and three (right) dimensions, here.
+  }
   \label{fig:polykernel}
 \end{figure}
 
-Look at what the decision surface does when you increase the value for
+\emph{Look at what the decision surface does when you increase the value for
 \texttt{C} and set it to 10000. Can you intuitively describe why
-that happens?
+that happens?}
+
+\paragraph{Gaussian Kernel}
+\label{par:gaussian_kernel}
+Another useful kernel on numerical data is the gaussian kernel:
+
+\begin{align}
+  k_{d,k}^{\mbox{gaussian }} ({\bf w}, {\bf w'}) = \exp \left( - \frac {1} {\sigma} \| {\bf w}, {\bf w'} \|^2 \right)
+\end{align}
 
 <<label=svmGaus,fig=TRUE,include=FALSE,echo=TRUE>>=
 gsvm <- SVM(Xc, yc, kernel="gaussian", C=1000, width=1)
@@ -501,27 +489,14 @@ plotDecisionSurface(gsvm, Xc, yc, wireframe=TRUE)
   \centering  
   \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-svmGaus.pdf}}\quad
   \subfigure{\includegraphics[width=3in]{Rfigs/gen-svmGaus3D.pdf} }}
-  \caption{Using a gaussian kernel to split data in a higher dimension}
-  \label{fig:polykernel}
+  \caption{
+    Using a gaussian kernel to split non-separable data. The decision surface
+    for the SVM is shown in both two- and three-dimensional space
+  }
+  \label{fig:gausskernel}
 \end{figure}
 
 
-
-%% <<label=svmDecision>>=
-%% ## Let's make 2D data from gaussians with different means
-%% set.seed(123)
-%%
-%% Xgaus <- matrix(c(rnorm(2 * N, 1, 1), rnorm(2 * N, -1, 1)), ncol=2)
-%% simplePlot(Xgaus, y)
-%%
-%% lsvm <- showSVM(Xgaus, y, kernel="linear", C=10)
-%% lacc <- sum(predict(lsvm, Xgaus) == y) / length(y)
-%% cat(sprintf("Linear svm accuracy: %.2f\n", lacc)
-%%
-%% gsvm <- showSVM(Xgaus, y, kernel="gaussian", C=10, width=1)
-%% gacc <- sum(predict(gsvm, X) == y) / length(y)
-%% cat(sprintf("Gaussian svm accuracy: %.2f\n", gacc))
-%% @
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Classification on Strings
@@ -543,7 +518,25 @@ Mismatch string kerenls~\cite{Leslie:2004kt}
 \end{equation}
 
 where $N(u,x)$ is the function that returns the number of occurrences of kmer
-$u$ in the string $x$.
+$u$ in the string $x$. An intuitive representation of the kernel kernel is shown
+in Figure~\ref{fig:spectrum}
+
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[scale=1]{figs/spcectrum}
+  \caption{
+    Calculating the spectrum kernel, with and without mismatches.
+    A naive way to calculate the spectrum kernel of degree 2 is shown.
+    A sliding window (red box) equal to length as the degree of the kernel
+    slides along the string. The exact $k$-mers are counted as they appear
+    (above). We can allow for a mismatch by incrementing the count of all
+    of the kmers in an $N$-mismatch neighborhood around the current $k$-mer
+    in the window (below). The kernel function to compare two strings
+    is simply an inner product of their vector representations.
+    
+  }
+  \label{fig:spectrum}
+\end{figure}
 
 \emph{Exercise: Build your own spectrum kernel implementation}.
 \emph{Exercise: How long do the kmers have to be to build a strong classifier?}
@@ -551,14 +544,19 @@ $u$ in the string $x$.
 <<label=promoters>>=
 data(promoters, package="shikken")
 head(promoters)
-pr.class <- values(promoters)$class
-X.proms <- spectrumFeatures(promoters, degree=4)
+X.prom <- spectrumFeatures(promoters, degree=4)
+y.prom <- values(promoters)$class
+
+ssvm <- SVM(X.prom, y.prom, kernel='linear')
+table(predict(ssvm, X.proms), pr.class)
 @
 
-TODO: Randomize promoters? reverse them, etc. does it still work?
-
-But, what is the SVM actually saying? We can obviously classify a promoter from
-background sequence, but how can we understand it?
+It is clear that we can classify the promoters correctly using a spectrum
+kernel of degree four. While building an accurate classifier is sometimes
+sufficient for a given task, it can also be important to understand what
+it means --- how is the SVM able to identify promoters vs. non promoters?
+It would be nice if we could gain some insight into what the SVM is doing.
+There might be some interesting biology there.
 
 %% ============================================================================
 %% Feature Selection
@@ -574,6 +572,21 @@ positional oligomer importance matrices (POIMs)~\cite{Sonnenburg:2008do}.
 
 The elastic net can do similar~\cite{Zou:2005elastic}.
 TODO: Show same example using \texttt{glmnet}.
+
+%% ============================================================================
+%% Cross validation
+\subsection{Cross validation}
+\label{sub:cross_validation}
+
+Randomize the labels and try again -- can the SVM learn a perfect classifier?
+<<label=randomPromoter>>=
+y.rand <- sample(y.prom)
+rsvm <- SVM(promoters, y.rand, kernel='spectrum', degree=4)
+table(predict(rsvm, promoters), y.prom)
+
+rsvm <- SVM(promoters, y.rand, kernel='spectrum', degree=8)
+table(predict(rsvm, promoters), y.prom)
+@
 
 %% ============================================================================
 %% Characterize NOVA binding sites
