@@ -109,10 +109,10 @@ The goal of this tutorial is to provide a brief and intuitive introduction to
 some machine learning techniques --- primarily support vector machines. Some
 mathematical rigor will likely be sacrificed in order to appeal to intuition.
 Technical concepts will be followed closely by practical examples in R to help
-shed light on thing that may seem to be, at first, too abstract.
+shed light on things that may at first seem to be too abstract.
 
 We will introduce string kernels and show how they can be used to learn from
-sequencing data. An example of how you can begin to use them with HITS-CLIP
+sequencing data. An example of how one can begin to use them with HITS-CLIP
 data to try to identify the preferred binding landscape for the
 RNA binding protein \emph{NOVA-1/2} will be introduced.
 
@@ -122,8 +122,10 @@ A live presentation of this material should probably be less verbose.
 This document and package made its initial debut as a tutorial given at the
 \emph{Advanced R / Bioconductor Workshop on High-Throughput Genetic Analysis}
 hosted at the Fred Hutchinson Cancer Research Center in February, 2012. It will
-continue to live (and receive updates) in the hope that others may find it
-useful to learn from at the following github repository:
+continue to live (and receive updates) at the github repository listed below
+in the hope that others may find it useful as a resource to learn from.
+
+Questions and comments are encouraged.
 
 \begin{center}
   \url{https://github.com/lianos/BiocSeqSVM}
@@ -131,15 +133,15 @@ useful to learn from at the following github repository:
 
 \clearpage
 
-\renewcommand{\baselinestretch}{.6}
+% \renewcommand{\baselinestretch}{.6}
 
 \tableofcontents
 
-\thispagestyle{empty}
+% \thispagestyle{empty}
 
 \vspace{.2in}
 
-\renewcommand{\baselinestretch}{1}
+% \renewcommand{\baselinestretch}{1}
 
 \clearpage
 
@@ -158,8 +160,12 @@ of biology and bioinformatics. Perhaps the largest deluge of the application of
 ML techniques to biology happened after the widespread adoption of microarrays.
 Microarrays make it easy for researchers to generate extremely high dimensional
 datasets produced by measuring the expression of thousands of genes at a single
-time point --- their interpretation, however, is often a challenge, and this is
-where the smart application of ML techniques can really pay off.
+time point. Another floodgate of biological data has recently been opened as
+the cost of next generation sequencing (NGS) has plummeted. There is no shortage
+of ways scientists can now generate vast amount of data, but its interpretation
+still remains a challenge. In this vein, the appropriate application of ML
+can prove to be quite fruitful when trying to shed some light on the dark
+corners of your data..
 
 %% ============================================================================
 %% Caveat emptor
@@ -168,9 +174,19 @@ where the smart application of ML techniques can really pay off.
 
 \begin{itemize}
   \item This tutorial is not meant to serve as a general purpose introduction to
-  machine learning concepts. Other tutorials are available that you can find online
-  that can serve this purpose. In the context of machine learning and R, these
-  will likely be helpful:
+  machine learning concepts. In particular, you will find very little time spent
+  on discussing concepts such as cross validation, which is a \emph{crucial} step in
+  assessing the performance and general utility of any machine learning algorithm.
+  In this tutorial, more time is spent showing how support vector machines 
+  (and different kernels) work, and how changing their parameters can affect the
+  behavior of the algorithm. It can't be stressed enough that proper parameter
+  tuning and model assessment (through cross validation, for instance) is
+  \emph{absolutely essential}, even if it is only paid lip service here. In my
+  opinion, once one gains a thorough understanding of the algorithms being used,
+  applying something like cross validation should be quite trivial.
+  
+  For further ML references, especially in the context of \texttt{R} and bioconductor,
+  the reader might be interested in the following resources:
   
   \begin{itemize}
     \item The \href{http://www.bioconductor.org/help/course-materials/2011/CSAMA/}{CSAMA 2011 workshop, machine learning primer}, by Vincent Carey.
@@ -186,8 +202,8 @@ where the smart application of ML techniques can really pay off.
   in one package. It also has a focus on kernel methods that are useful in
   biology --- particularly ones that work on sequence features. My hope is that
   being able to access Shogun's functionality through shikken will be helpful
-  since it provides an interface to Shogun that an R user will likely be more
-  comfortable with. See Section~\ref{sec:shogun} for more information about how
+  since it provides an interface to Shogun that an \texttt{R} user will likely be
+  more comfortable with. See Section~\ref{sec:shogun} for more information about how
   to use shikken effectively (ie. what bugs you should be looking out for!).
 \end{itemize}
 
@@ -197,10 +213,10 @@ where the smart application of ML techniques can really pay off.
 \section{Support vector machines and large margin classifiers}
 \label{sec:support_vector_machines}
 
-[Note: the details and examples to illustrate the fundamentals of how SVMs
+[Note: the details and examples used to illustrate the fundamentals of how SVMs
 work are largely taken and summarized from~\cite{BenHur:2008ec,BenHur:2009ch}.
-William Noble has also authored another introduction to SVMs that appeals to
-intuition over mathematical rigor~\cite{Noble:2006br}]
+Yet another introduction to SVMs in the context of computational biology can
+be found here~\cite{Noble:2006br}]
 
 The Support Vector Machine (SVM) is a versatile and state-of-the-art classifier
 that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}.
@@ -211,18 +227,30 @@ distance from the decision boundary to the first training example (that is not
 actively being ignored!). Large margin classifiers have the tendency to
 generalize well to unseen data --- intuitively because they provide more
 ``breathing room'' between the decision boundary and the next unseen data point
-you want to classify.
+you want to classify. The SVM finds the optimal decision boundary by minimizing
+$\| {\bf w} \|^2$ in the convex optimization problem shown in
+Equation~\ref{eqn:softmargin}, and depicted in Figure~\ref{fig:svmdecision}.
+
+\begin{align}
+  \min_{ {\bf w}, b, \xi} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 + C \sum_{i=1}^n \xi_i \nonumber \\
+  \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 - \xi_i, \nonumber \\
+  \xi_i \ge 0, \mbox{for } i = 1 \dots n
+\label{eqn:softmargin}
+\end{align}
+
 
 \begin{figure}[htbp]
   \centering
-    \includegraphics[scale=0.5]{figs/decision-boundaries.pdf}
+    \includegraphics[scale=0.6]{figs/decision-boundaries.pdf}
   \caption{
     The anatomy of a decision boundary for a large (and soft) margin classifier.
-    \textbf{A} The red, green, and blue decision boundaries all separate the 
-    two-class training data (tgrey and white points) equally well.
-    equally well. The decision boundary found by the SVM has a \emph{large margin}
-    because the smallest distance to any training point is maximized. The example
-    outlined in red is ignored when defining the margin (the dashed lines), but the
+    \textbf{A} The red, green, and blue decision boundaries on the left all separate
+    the two-class training data (grey and white points) equally well.
+    \textbf{B} The decision boundary found by the SVM is on the right.
+    The exact orientation of the boundary is specified by its orthogonal
+    vector ${\bf w}$. The boundary is said to have a \emph{large margin} because
+    the smallest distance to any training point is maximized. The example training
+    point outlined in red is ignored when defining the margin (the dashed lines), but the
     machine pays a penalty that is proportional to the magnitude of the margin
     violation $\xi_i$. The examples with dark borders are the support vectors, which
     orient the direction of $\vec{W}$. The size of the margin for this classifier is
@@ -233,24 +261,6 @@ you want to classify.
   }
   \label{fig:svmdecision}
 \end{figure}
-
-To find the large margin decision boundary, the SVM solves the following
-convex optimization problem:
-
-% Hard margin primal
-% \begin{align}
-%   \min_{ {\bf w}, b} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 \nonumber \\
-%   \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 \nonumber \\
-%   \mbox{for } i = 1 \dots n
-% \label{eqn:primal}
-% \end{align}
-
-\begin{align}
-  \min_{ {\bf w}, b, \xi} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 + C \sum_{i=1}^n \xi_i \nonumber \\
-  \mbox{s.t : } y_i \left( \left\langle {\bf w}, {\bf x}_i \right\rangle + b \right) \ge 1 - \xi_i, \nonumber \\
-  \xi_i \ge 0, \mbox{for } i = 1 \dots n
-\label{eqn:softmargin}
-\end{align}
 
 Minimizing $\| {\bf w} \|^2$ in Equation~\ref{eqn:softmargin} is equivalent
 to maximizing the margin. The inequality constraints on the second line
@@ -265,10 +275,10 @@ $C$ is also introduced. When training an SVM, it is important to identify the
 best value for $C$ given the data you have available to you. We will briefly
 explain how to do this later in Section~\ref{sec:model_refinement}.
 
-\paragraph{Basic SVM in R}
-\label{par:basic_svm_in_r}
+\paragraph{Basic SVMs in R}
+\label{par:basic_svms_in_r}
 
-Let's fire up R and create a dataset that almost looks like that data in
+Let's fire up \texttt{R} and create a dataset that almost looks like that data in
 Figure~\ref{fig:svmdecision} so we can see how to classify it using the
 SVM methods available in shikken.
  
@@ -276,7 +286,7 @@ SVM methods available in shikken.
 library(BiocSeqSVM)
 library(shikken)
 
-## Create two clas data
+## Create two class data
 set.seed(123)
 N <- 50
 X1 <- matrix(c(rep(-2, N) - rnorm(N, 1), rnorm(N) + 2), ncol=2)
@@ -295,16 +305,16 @@ described in Formula~\ref{eqn:softmargin}, ie. the cost for non-zero
 slack variables.
 
 <<label=easyMargin,fig=TRUE,include=FALSE>>=
-lsvm <- SVM(X, y, C=10)
+lsvm <- SVM(X, y, C=100)
+plotDecisionSurface(lsvm, X, y)
 
 ## Does it accurately classify the data?
 table(predict(lsvm, X), y)
-
-plotDecisionSurface(lsvm, X, y)
 @
 
 The \texttt{plotDecisionSurface} function draws the data points
-over a contour plot of the decision surface from the SVM. The decision
+over a contour plot of the decision surface from the SVM
+(Figure~\ref{fig:easymargin}). The decision
 boundary is located at the $z=0$ contour. The points in red are the
 examples that serve as the support vectors --- note how these examples
 orient the decision boundary. As examples get further and further away
@@ -313,7 +323,7 @@ When the SVM produces a high (absolute) decision value, you can think of
 it as giving a high-confidence prediction of the class label. Positive
 decision values belong to one class, negative values belong to the other.
 
-\emph{What happens to the decision boundary and support vectors
+\paragraph{Question} \emph{What happens to the decision boundary and support vectors
 when we decrease the value of $C$ to either $0.5$ or $0.1$.
 Why does that happen?}
 
@@ -325,16 +335,19 @@ lsvm <- SVM(X, y, C=0.1)
 plotDecisionSurface(lsvm, X, y)
 @
 
-As we all know, datasets aren't as well behaved as the toy example we've
+\paragraph{Add some noise}
+
+If you have ever worked with real data, it will come to no surprise to you that
+most datasets are not as well behaved as the toy example we've
 tried so far. Let's imagine there was some noise in a measurement that
-produced an outlier of our positively labeled data that looks a lot
+produced an outlier of our negatively labeled data that looks a lot
 closer to our negative data than the positive data.
 
 <<label=easyOutlier,fig=FALSE>>=
-X.out <- rbind(X, t(c(-2, -0.5)))
-y.out <- c(y, 1)
+X.out <- rbind(X, t(c(-1, -0.5)))
+y.out <- c(y, -1)
 
-lsvm <- SVM(X.out, y.out, C=10)
+lsvm <- SVM(X.out, y.out, C=100)
 plotDecisionSurface(lsvm, X.out, y.out)
 
 table(predict(lsvm, X.out), y.out)
@@ -343,7 +356,8 @@ table(predict(lsvm, X.out), y.out)
 The SVM is doing its job and classifying the data perfectly, but is this
 desirable?
 
-\emph{What should we do instead? Is the best classifier you can build the
+\paragraph{Question} \emph{What should we do instead?
+Is the best classifier you can build the
 one that always classifies your training data perfectly?}
 
 <<label=easySoftMargin,echo=FALSE,include=FALSE,fig=TRUE>>=
@@ -363,9 +377,9 @@ plotDecisionSurface(lsvm, X.out, y.out)
     example on the right, imagine we observed an outlier in our set of
     positively labeled data. Trying to fit the hyperplane to classify that
     example will severely skew the decision boundary and rotate it to the
-    right (as we saw in the examples). Setting $C = 0.5$ allows us to recover
-    a classifier with a larger margin by allowing the SVM to misclassify the
-    ``outlier''.
+    right, as we saw in the example code when $C=100$. Setting $C = 0.5$
+    allows us to recover a classifier with a larger margin by allowing the
+    SVM ``enough slack'' to misclassify the ``outlier''.
   }
   \label{fig:easymargin}
 \end{figure}
@@ -375,13 +389,13 @@ plotDecisionSurface(lsvm, X.out, y.out)
 \section{Kernels}
 \label{sec:kernels}
 
-As we saw in the previous example, not all data is well behaved --- meaning
-that it is not easy to find a linear separator that can split your two classes
+As we saw in the previous example, not all data is well behaved --- it is not
+always easy to find a linear separator that can split your two classes
 of data. Still, the challenge of dealing with outliers was one that the SVM
 seemed to handle quite easily. But what happens if your data is really
-impossible to split?
+impossible to split, as shown in the code below and in Figure~\ref{fig:circledata}?
 
-<<label=circleData,fig=TRUE,include=TRUE>>=
+<<label=circleData,fig=TRUE,include=FALSE>>=
 Xcircle <- makeCircle(0, 0, 5, nv=100)
 Xcircle <- cbind(Xcircle$x, Xcircle$y)
 Xinside <- matrix(rnorm(200), ncol=2)
@@ -392,10 +406,40 @@ yc <- rep(c(1, -1), each=100)
 simplePlot(Xc, yc)
 @
 
+\begin{figure}[htbp]
+  \centering
+    \includegraphics[scale=.2]{Rfigs/gen-circleData}
+  \caption{Data that is not linearly separable.}
+  \label{fig:circledata}
+\end{figure}
+
+There is a \emph{dual} formulation of the SVM objective function that uses
+Lagrange multipliers and its optimal value is the same as the primal
+one under certain constraints. The derivation of the dual from the primal
+is skipped here (for more details, the reader can reference one of many
+SVM tutorials). The final equation is listed in Equation~\ref{eqn:dual}. Note
+that in the dual, the SVM optimization depends on the inputs ${\bf x})i$
+only through their dot products, which allows the algorithm to be
+\emph{kernelized}:
+
+\begin{align}
+  \max_a \sum_{i=1}^n \alpha_i - \frac {1} {2} \sum_{i=1}^n \sum_{j=1}^n y_i y_j \alpha_i \alpha_j \left\langle {\bf x}_i, {\bf x}_j \right\rangle \nonumber  \\
+  \mbox{s.t : } \sum_{i=1}^n y_i \alpha_i = 0; \mbox{ } 0 \leq a_o \leq C
+\label{dual}
+\end{align}
+
+The weight vector ${\bf w}$ can be expressed by the examples ${\bf x}_i$ and
+their weights $\alpha_i$ as shown in Figure~\ref{fig:wvector}. The examples which have $\alpha_i > 0$ are called the \emph{support vectors}, which lie on (or within)
+the margin (these are the red examples shown in the \texttt{plotDecisionSurface})
+function.
+
+\begin{alpha}
+  {\bf w} = \sum_{i=1}^n \y_i alpha_i {\bf x}_i
+\end{alpha}
+
 Using kernels, a linear classifier can generate non-linear decision boundaries.
 This is accomplished by mapping the data to another (typically higher dimension)
-feature space using a function $\phi$. The discriminant function is then
-transformed to:
+feature space using a function $\phi$. The discriminant function is then:
 
 \begin{align}
   f(x) = \left\langle {\bf w}, \phi ({\bf x}) \right\rangle + b
@@ -405,11 +449,10 @@ transformed to:
 $f(x)$ is linear in the feature space defined by the mapping function $\phi$,
 but can look non-linear when projected back down to the original feature space.
 
-A, perhaps non-obvious, advantage of measuring relationships between examples
-through kernel functions is that we often do not have to map examples
-into the higher dimensional feature space to calculate their similarity. This
-project can be implicit, which can provide large memory and computational cost
-gains. Refer to the polynomial kernel example below.
+\paragraph{Important} A, perhaps non-obvious, advantage of measuring relationships
+between examples through kernel functions is that we often do not have to
+explicitly map examples into the higher dimensional feature space to calculate their similarity. Their projection can be implicit, which can provide large memory and 
+computational cost gains. Refer to the polynomial kernel example below.
 
 \begin{equation}
   f(x) = \sum_{i=1}^N \alpha_i y_i k({\bf x_i}, {\bf x}) + b
