@@ -388,14 +388,16 @@ plotDecisionSurface(lsvm, X.out, y.out)
     example will severely skew the decision boundary and rotate it to the
     right, as we saw in the example code when $C=100$. Setting $C = 0.5$
     allows us to recover a classifier with a larger margin by allowing the
-    SVM ``enough slack'' to misclassify the ``outlier''.
+    SVM ``enough slack'' to misclassify the ``outlier'' (shown on right).
   }
   \label{fig:easymargin}
 \end{figure}
 
+\clearpage
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Kernels
-\section{Kernels}
+\section{Kernels (and the dual of the SVM)}
 \label{sec:kernels}
 
 As we saw in the previous example, not all data is well behaved --- it is not
@@ -405,6 +407,7 @@ seemed to handle quite easily. But what happens if your data is really
 impossible to split, as shown in the code below and in Figure~\ref{fig:circledata}?
 
 <<label=circleData,fig=TRUE,include=FALSE>>=
+## The guts of makeCircle taken from plotrix package
 Xcircle <- makeCircle(0, 0, 5, nv=100)
 Xcircle <- cbind(Xcircle$x, Xcircle$y)
 Xinside <- matrix(rnorm(200), ncol=2)
@@ -418,18 +421,25 @@ simplePlot(Xc, yc)
 \begin{figure}[htbp]
   \centering
     \includegraphics[scale=.1]{Rfigs/gen-circleData}
-  \caption{Data that is not linearly separable.}
+  \caption{How can you separate this with a linear classifier?}
   \label{fig:circledata}
 \end{figure}
 
-A reasonable way to split the data in Figure~\ref{fig:circledata} is to
-project it into a higher dimensional space where it can then be
-cleanly separated by a simple line (hyperplane) in that new space.
-At first blush, a naive way to do this is to explicitly project
-every data point into the new space and just find the hyperplane
-like ``you normally would.'' Your ${\bf w}$ vector would then 
-also be living in this space and your new discriminant function would
-then look like what is shown in Equation~\ref{eqn:phidisc}.
+A reasonable way to split the data in Figure~\ref{fig:circledata}
+with a linear classifier is to first project it into a higher
+dimensional space, then find the hyperplane that can separate
+the data in this new space. A ``simple''\footnote{
+  ``Simple'' is in quotes here, because this
+  is ``simple'' to think about, but if you are working with thousands
+  (or millions) of data points, and you want to project them into
+  a $50,000$ dimensional space, the ``simple'' task of just holding
+  all of this data in memory isn't so simple anymore.
+} way to do this is to
+explicitly project every data point into the new space and then
+find the hyperplane like ``you normally would.'' Your ${\bf w}$
+vector would then  also be living in this higher dimensional space
+and your new discriminant function would then look like what is shown in
+Equation~\ref{eqn:phidisc}. 
 
 \begin{align}
   f(x) = \left\langle {\bf w}, \phi ({\bf x}) \right\rangle + b
@@ -459,7 +469,7 @@ Equation~\ref{eqn:dual}.
 \begin{align}
   \max_a \sum_{i=1}^n \alpha_i - \frac {1} {2} \sum_{i=1}^n \sum_{j=1}^n y_i y_j \alpha_i \alpha_j \left\langle {\bf x}_i, {\bf x}_j \right\rangle \nonumber  \\
   \mbox{s.t : } \sum_{i=1}^n y_i \alpha_i = 0; \mbox{ and } 0 \leq a_o \leq C
-\label{dual}
+\label{eqn:dual}
 \end{align}
 
 It can also be shown that the weight vector ${\bf w}$ can be
@@ -470,10 +480,12 @@ expressed solely as a function over the examples ${\bf x}_i$ and their optimal v
 \label{eqn:wvector}
 \end{align}
 
-Our discriminant function is therefore:
+Using the kernel trick we can rewrite our discriminant function from
+Equation~\ref{eqn:wvector} to:
 
 \begin{align}
-  f({\bf x}) = \sum_{i=1}^n y_i \alpha_i k({\bf x_i}, {\bf x}) + b
+  f({\bf x}) = \sum_{i=1}^n y_i \alpha_i k({\bf x}_i, {\bf x}) + b
+\label{eqn:wkernel}
 \end{align}
 
 The SVM will try to set many of the $\alpha_i$ values to 0, which will give
@@ -481,41 +493,23 @@ us a sparse \emph{representation} of ${\bf w}$ using only the examples where
 $\alpha_i > 0$ --- these examples are called the \emph{support vectors} and lie on
 (or within) the margin. The support vectors are the red examples shown in the \texttt{plotDecisionSurface}) function.
 
-
-Now, we're trying to drive to the point that we can use a linear classifier to
-classify non-separable data by projecting the data into a higher dimensional
-space. We can naively do this by 
-
-Using kernels, a linear classifier can generate non-linear decision boundaries.
-This is accomplished by mapping the data to another (typically higher dimension)
-feature space 
-
-$f(x)$ is linear in the feature space defined by the mapping function $\phi$,
-but can look non-linear when projected back down to the original feature space,
-as shown in Figures~\ref{fig:polykernel}, and ~\ref{fig:gausskernel}.
-
-Note that in the dual, the SVM optimization depends on the inputs ${\bf x}_i$
-only through their dot products, which allows the algorithm to be
-\emph{kernelized}.
-
-\paragraph{Important} An advantage of measuring relationships between examples
-through kernel functions is that we often do not have to
-explicitly map examples into the higher dimensional feature space to calculate their similarity. Their projection can be implicit, which can provide large memory and 
-computational cost gains. Refer to the polynomial kernel example below.
-
-\begin{equation}
-  f(x) = \sum_{i=1}^N \alpha_i y_i k({\bf x_i}, {\bf x}) + b
-\label{eqn:kernelexp}
-\end{equation}
-
-TODO: Dual
-
-To extract the ${\bf w}$ weight vector:
-
-\begin{equation}
-  {\bf W} = \sum_{i=1}^N \alpha_i y_i {\bf x}_i
-\label{eqn:wvector}
-\end{equation}
+\paragraph{Important take away from the dual and kernels}
+\begin{itemize}
+  \item We can use kernels to calculate similarities between two objects
+        by implicitly mapping them to different feature spaces.
+  \item The SVM can be solved using this implicit mapping (Equation~\ref{eqn:dual}), 
+        which means you can work in, say, a $50,000$ dimensional space without having
+        to explicitly generate feature vectors of $50,000$ dimensions for all of your
+        data points
+  \item The decision boundary of the SVM has a sparse representation which only
+        relies on the $\alpha_i$ values from your support vectors, and the support
+        vectors themselves, which you keep in their ``native'' (lower dimensional)
+        feature space.
+  \item Kernel functions are flexible and can be developed to take advantage
+        of relationships in your data. In this tutorial, we will show kernels
+        for numeric data which are generally useful, but also kernels which define
+        similarities between different properties of strings.
+\end{itemize}
 
 %% ============================================================================
 %% Numeric Kernels
@@ -531,7 +525,6 @@ To extract the ${\bf w}$ weight vector:
 \end{align}
 
 <<label=svmPoly,fig=TRUE,include=FALSE>>=
-## guts of makeCircle taken from plotrix package
 psvm <- SVM(Xc, yc, kernel="poly", C=10, degree=2)
 table(predict(psvm, Xc), yc)
 
