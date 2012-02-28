@@ -662,10 +662,39 @@ it means --- how is the SVM able to identify promoters vs. non promoters?
 It would be nice if we could gain some insight into what the SVM is doing.
 There might be some interesting biology there.
 
+You can also create the ``spectrum features'' using
+\texttt{oligonucleotideFrequency} and use something like glmnet\footnote{
+  If you are trying to do a penalized ordinary/logistic regression,
+  I have a buckshot package at http://gihub.com/lianos/buckshot that
+  wraps the large scale parallelized solver called ``shotgun'' written
+  by the SELECT lab at CMU.
+}
+
+\paragraph{Practical time}
+
 \begin{itemize}
-  \item Visualize kmers
+  \item Visualize kmers using ${\bf w}$ vector
+  \item POIMs~\cite{Ratsch:2006il} are a principled way to visualize results
   \item Try similar task in mouse. See \texttt{demos/predict-mm9-tss.R}
+  \item Do HITS-CLIP example
+
+  \item mention multi-task learning
 \end{itemize}
+
+\paragraph{Multitask learning}
+
+A general version of the loss we are optimizing
+
+\begin{align}
+  \min_{\mathbf{w}} \underbrace{L(\mathbf{w}|X,Y)}_{\textnormal{loss-term}} + \underbrace{R(\mathbf{w})}_{\textnormal{regularizer}}.
+\end{align}
+
+We could try to improve the mouse/fly joint model via multi task learning
+
+\begin{align}
+  \min_{\mathbf{w}_1, ..., \mathbf{w}_M} \sum_{i=1}^M \underbrace{L(\mathbf{w}_i|X,Y)}_{\textnormal{loss-term}} + \sum_{i=1}^M \underbrace{R(\mathbf{w}_i)}_{\textnormal{regularizer}} + \underbrace{R_{MTL}(\mathbf{w}_1, ..., \mathbf{w}_M)}_{\textnormal{MTL-regularizer}}.
+\end{align}
+
 
 %% ============================================================================
 %% Feature Selection

@@ -1,10 +1,4 @@
-library(BSgenome.Mmusculus.UCSC.mm9)
-library(GenomicRanges)
-library(shikken)
-
-ag.mm9 <- readRDS('/home/steve/ml-data/annotated.genome.mm9.rds')
-## ag.mm9 <- readRDS('~/cBio/projects/TagSeq/inst/extdata/annotated.genome.mm9.rds')
-
+## Make sure you run the initialization code in get-data.R
 chr1.prom <- ag.mm9[seqnames(ag.mm9) == 'chr1' &
                     values(ag.mm9)$exon.anno == 'utr5*']
 summary(width(chr1.prom))

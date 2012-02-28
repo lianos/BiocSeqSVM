@@ -5,78 +5,6 @@ library(ggplot2)
 library(shikken)
 
 ################################################################################
-## Local setup
-if (FALSE) {
-  ag.mm9 <- readRDS('~/cBio/projects/TagSeq/inst/extdata/annotated.genome.mm9.rds')
-  ag.dm3 <- readRDS('/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene/cache/annotated.chromosomes/annotated.collapse-cover.up-500.down-5000.cds-cover-max.rds')
-
-  ## dm3 is duplicated!
-  if (FALSE) {
-    dt <- as(ag.dm3, 'data.table')
-    setkeyv(dt, c('seqnames', 'strand', 'start'))
-    u <- unique(dt)
-    ag.dm3 <- as(u, 'GRanges')
-    saveRDS(ag.dm3, '/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene/cache/annotated.chromosomes/annotated.collapse-cover.up-500.down-5000.cds-cover-max.rds')
-  }
-
-  ## dm.exons
-  ## load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/Dmel.DEXSeq.exons.rda')
-
-  ## nova.peaks
-  load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/NOVA.mm9.rda')
-
-  ## p.counts, dm.exons
-  load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/pasillaData.rda')
-
-  dex <- read.table('/Users/stavros/cBio/bioc/BiocSeqSVM/data/ps.diff-exons-some.txt',
-                    stringsAsFactors=FALSE, header=TRUE, sep="\t")
-
-
-  library(GenomicCache)
-  library(SeqTools)
-  gcm <- GenomicCache("/Users/stavros/cBio/projects/GenomicCache/GenomicCache.mm9.knownGene")
-  gcd <- GenomicCache('/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene')
-  n1 <- GFGene("Nova1", gcm)
-  n2 <- GFGene("Nova2", gcm)
-
-  dl('seqstore')
-
-  bams <- c(wt1='/Users/stavros/cBio/bioc/data/pasilla/untreated-1/tophat_out/accepted_hits.bam',
-            wt2='/Users/stavros/cBio/bioc/data/pasilla/untreated-4/tophat_out/accepted_hits.bam',
-            ps1='/Users/stavros/cBio/bioc/data/pasilla/ps-si-1/tophat_out/accepted_hits.bam')
-  bams <- as.list(bams)
-  bams <- lapply(bams, BamFile)
-
-  ## Fly
-  ## http://www-huber.embl.de/pub/DEXSeq/psfb/testForDEU.html
-  tenm <- GFGene("Ten-m", gcd) ## exon 7: ~ 22362702
-  tranges <- ag.mm9[values(ag.mm9)$symbol == "Ten-m"]
-  br <- GFGene("br", gcd) ## exon 12 1537033 chrX [1531317, 1531367]
-}
-
-################################################################################
-## AMI setup
-if (FALSE) {
-  ag.mm9 <- readRDS('/home/steve/ml-data/annotated.genome.mm9.rds')
-  ## ag.dm3 <- readRDS('/home/steve/ml-data/annotated.genome.dm3.rds')
-  base <- 'http://cbio.mskcc.org/~lianos/files/bioc2012'
-
-  fetch <- c('Dmel.DEXSeq.exons.rda',
-             'NOVA.mm9.rda',  ## nova.peaks
-             'pasillaData.rda', ## dm.exons
-             'dm3.anno.rds') ## dm3 genome annotation
-  for (get in fetch) {
-    download.file(paste(base, get, sep="/"), get)
-    if (length(grep("rds$", get)) == 0) {
-      load(get)
-    }
-  }
-  ag.dm3 <- readRDS('dm3.anno.rds')
-
-  dex <- system.file("data", "ps.diff-exons.txt", package="BiocSeqSVM")
-}
-
-################################################################################
 ## Use spectrum kernel to learn preferred binding landscape of NOVA in mouse
 head(nova.peaks)
 dt.mm9 <- as(ag.mm9, 'data.table')
@@ -257,6 +185,8 @@ plot.densities(iall.preds, ineg.preds, legend=c('peak', 'nopeak'),
 ## dm3
 ## Can we transfer SVM to fly?
 library(BSgenome.Dmelanogaster.UCSC.dm3)
+dex <- read.table('http://cbio.mskcc.org/~lianos/files/bioc2012/ps.diff-exons-some.txt',
+                  stringsAsFactors=FALSE, header=TRUE)
 dex <- as.data.frame(dex)
 dex <- transform(dex, key=paste(gene_id, formatC(bin, 2, flag='0'), sep=":"))
 
@@ -328,3 +258,77 @@ no.dex <- no.dex[countOverlaps(no.dex, dex.gr) == 0]
 
 
 
+##################################################################################
+## Scratch
+################################################################################
+## Local setup
+# if (FALSE) {
+#   ag.mm9 <- readRDS('~/cBio/projects/TagSeq/inst/extdata/annotated.genome.mm9.rds')
+#   ag.dm3 <- readRDS('/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene/cache/annotated.chromosomes/annotated.collapse-cover.up-500.down-5000.cds-cover-max.rds')
+# 
+#   ## dm3 is duplicated!
+#   if (FALSE) {
+#     dt <- as(ag.dm3, 'data.table')
+#     setkeyv(dt, c('seqnames', 'strand', 'start'))
+#     u <- unique(dt)
+#     ag.dm3 <- as(u, 'GRanges')
+#     saveRDS(ag.dm3, '/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene/cache/annotated.chromosomes/annotated.collapse-cover.up-500.down-5000.cds-cover-max.rds')
+#   }
+# 
+#   ## dm.exons
+#   ## load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/Dmel.DEXSeq.exons.rda')
+# 
+#   ## nova.peaks
+#   load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/NOVA.mm9.rda')
+# 
+#   ## p.counts, dm.exons
+#   load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/pasillaData.rda')
+# 
+#   dex <- read.table('/Users/stavros/cBio/bioc/BiocSeqSVM/data/ps.diff-exons-some.txt',
+#                     stringsAsFactors=FALSE, header=TRUE, sep="\t")
+# 
+# 
+#   library(GenomicCache)
+#   library(SeqTools)
+#   gcm <- GenomicCache("/Users/stavros/cBio/projects/GenomicCache/GenomicCache.mm9.knownGene")
+#   gcd <- GenomicCache('/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene')
+#   n1 <- GFGene("Nova1", gcm)
+#   n2 <- GFGene("Nova2", gcm)
+# 
+#   dl('seqstore')
+# 
+#   bams <- c(wt1='/Users/stavros/cBio/bioc/data/pasilla/untreated-1/tophat_out/accepted_hits.bam',
+#             wt2='/Users/stavros/cBio/bioc/data/pasilla/untreated-4/tophat_out/accepted_hits.bam',
+#             ps1='/Users/stavros/cBio/bioc/data/pasilla/ps-si-1/tophat_out/accepted_hits.bam')
+#   bams <- as.list(bams)
+#   bams <- lapply(bams, BamFile)
+# 
+#   ## Fly
+#   ## http://www-huber.embl.de/pub/DEXSeq/psfb/testForDEU.html
+#   tenm <- GFGene("Ten-m", gcd) ## exon 7: ~ 22362702
+#   tranges <- ag.mm9[values(ag.mm9)$symbol == "Ten-m"]
+#   br <- GFGene("br", gcd) ## exon 12 1537033 chrX [1531317, 1531367]
+# }
+# 
+# ################################################################################
+# ## AMI setup
+# if (FALSE) {
+#   # ag.mm9 <- readRDS('/home/steve/ml-data/annotated.genome.mm9.rds')
+#   # ## ag.dm3 <- readRDS('/home/steve/ml-data/annotated.genome.dm3.rds')
+#   # base <- 'http://cbio.mskcc.org/~lianos/files/bioc2012'
+#   # 
+#   # fetch <- c('Dmel.DEXSeq.exons.rda',
+#   #            'NOVA.mm9.rda',  ## nova.peaks
+#   #            'pasillaData.rda', ## dm.exons
+#   #            'dm3.anno.rds') ## dm3 genome annotation
+#   # for (get in fetch) {
+#   #   download.file(paste(base, get, sep="/"), get)
+#   #   if (length(grep("rds$", get)) == 0) {
+#   #     load(get)
+#   #   }
+#   # }
+#   # ag.dm3 <- readRDS('dm3.anno.rds')
+#   # 
+#   # dex <- system.file("data", "ps.diff-exons.txt", package="BiocSeqSVM")
+# }
+# 
