@@ -511,6 +511,8 @@ $\alpha_i > 0$ --- these examples are called the \emph{support vectors} and lie 
         similarities between different properties of strings.
 \end{itemize}
 
+\clearpage
+
 %% ============================================================================
 %% Numeric Kernels
 \subsection{Numeric Kernels}
@@ -520,7 +522,7 @@ $\alpha_i > 0$ --- these examples are called the \emph{support vectors} and lie 
 \label{par:polynomial_kernel}
 
 \begin{align}
-  k_{d,k}^{\mbox{polynomial }} ({\bf w}, {\bf w'}) = \left( \left\langle {\bf w}, {\bf w'} \right\rangle + k \right)^d
+  k_{d,k}^{\mbox{polynomial }} ({\bf x}, {\bf x'}) = \left( \left\langle {\bf x}, {\bf x'} \right\rangle + k \right)^d
 \label{eqn:polykernel}
 \end{align}
 
@@ -557,7 +559,7 @@ that happens?}
 Another useful kernel on numerical data is the gaussian kernel:
 
 \begin{align}
-  k_{d,k}^{\mbox{gaussian }} ({\bf w}, {\bf w'}) = \exp \left( - \frac {1} {\sigma} \| {\bf w}, {\bf w'} \|^2 \right)
+  k_{d,k}^{\mbox{gaussian }} ({\bf x}, {\bf x'}) = \exp \left( - \frac {1} {\sigma} \| {\bf x} - {\bf x'} \|^2 \right)
 \end{align}
 
 <<label=svmGaus,fig=TRUE,include=FALSE,echo=TRUE>>=
@@ -583,6 +585,7 @@ plotDecisionSurface(gsvm, Xc, yc, wireframe=TRUE)
 
 
 
+\clearpage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Classification on Strings
 \section{Classification on strings using the spectrum kernel}
@@ -603,8 +606,7 @@ Mismatch string kerenls~\cite{Leslie:2004kt}
 \end{align}
 
 where $N(u,x)$ is the function that returns the number of occurrences of kmer
-$u$ in the string $x$. An intuitive representation of the kernel kernel is shown
-in Figure~\ref{fig:spectrum}
+$u$ in the string $x$ and $\Sigma^d$ is the set of all words of length $d$. An intuitive representation of the kernel kernel is shown in Figure~\ref{fig:spectrum}
 
 \begin{figure}[htbp]
   \centering
@@ -618,8 +620,8 @@ in Figure~\ref{fig:spectrum}
     slides along the string.
     The counts of exact $k$-mers are incremented as they appear in the window
     (above). Mismatches can be accommodated by
-    incrementing the count of all of the $k$-mers in the $N$-mismatch
-    neighborhood around the current $k$-mer in the window (below, $N=1$).
+    incrementing the count of all of the $k$-mers in the $n$-mismatch
+    neighborhood around the current $k$-mer in the window (below, $n=1$).
     The final kernel evaluation between two strings is simply the
     dot product of their vector representations.
     The red arrow above the box points in the direction the window is sliding.
@@ -629,18 +631,29 @@ in Figure~\ref{fig:spectrum}
   \label{fig:spectrum}
 \end{figure}
 
-\emph{Exercise: Build your own spectrum kernel implementation}.
-\emph{Exercise: How long do the kmers have to be to build a strong classifier?}
+To be a bit more clea\texttt{R}, using \texttt{Biostrings} we can explicitly compute
+the feature space for a set of \texttt{XStringSet} objects $X$ used by the spectrum
+kerenl of degree $d$ via a call to \texttt{ol} , a call to
+\texttt{oligonucleotideFrequency(X, d)}.
+
+As an example of how to use the spectrum kernel, we'll use the ``promoter gene
+sequences'' dataset from the UCI machine learning repository. This dataset has a
+set of 50 promoter sequences from E. coli and another set of 50 non-promoter sequences.
+The data is provided as a \texttt{DNAStringSet} object in the \texttt{promoters} data
+object from the shikken library. The class of each promoter is stored in the
+\texttt{\$class} column of the \texttt{DataFrame} attached to the \texttt{DNAStringSet}.
 
 <<label=promoters>>=
 data(promoters, package="shikken")
 head(promoters)
-# X.prom <- spectrumFeatures(promoters, degree=4)
-# y.prom <- values(promoters)$class
+y <- values(promoters)$class
 
-# ssvm <- SVM(X.prom, y.prom, kernel='linear')
-# table(predict(ssvm, X.proms), pr.class)
+m <- SVM(promoters, y, kernel='spectrum', degree=4, threads=2)
+table(predict(m, promoters), y)
 @
+
+\emph{Exercise: How long do the kmers have to be to build a strong classifier?}
+
 
 It is clear that we can classify the promoters correctly using a spectrum
 kernel of degree four. While building an accurate classifier is sometimes
@@ -648,6 +661,11 @@ sufficient for a given task, it can also be important to understand what
 it means --- how is the SVM able to identify promoters vs. non promoters?
 It would be nice if we could gain some insight into what the SVM is doing.
 There might be some interesting biology there.
+
+\begin{itemize}
+  \item Visualize kmers
+  \item Try similar task in mouse. See \texttt{demos/predict-mm9-tss.R}
+\end{itemize}
 
 %% ============================================================================
 %% Feature Selection
