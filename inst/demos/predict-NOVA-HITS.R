@@ -54,7 +54,7 @@ if (FALSE) {
 }
 
 ################################################################################
-## Use spectrum kernel to learn preferred binding landscape of NOVA in mousr
+## Use spectrum kernel to learn preferred binding landscape of NOVA in mouse
 head(nova.peaks)
 dt.mm9 <- as(ag.mm9, 'data.table')
 dt.nova <- as(nova.peaks, 'data.table')
@@ -68,10 +68,23 @@ g <- ggplot(nova.summary, aes(x=exon.anno, y=score, fill=exon.anno)) +
   opts(title="NOVA binding site regions in mm9")
 print(g)
 
-## Let's remove intergnic hits
+## Let's remove intergnic hits from the HITS data
 dt.nova <- subset(dt.nova, exon.anno != 'intergenic')
-dt.mm9 <- subset(dt.mm9, entrez.id %in% dt.nova$entrez.id)
 
+## Subset our annotated genome to only include genes that are bound
+## by NOVA -- the idea is that we only want to work with genes that are
+## expressed, but we don't have any expression data, so this is the
+## best we can do for now.
+dt.mm9 <- subset(dt.mm9, entrez.id %in% dt.nova$entrez.id & !is.na(entrez.id))
+
+## filter annotation to "expressed" genic regions only
+ag.mm9 <- as(dt.mm9, "GRanges")
+
+## Lets break down genic binding sites into different categories.
+## Ones that bind in:
+##   - introns (maybe the affect up/downstream splicing)
+##   - cds  (maybe the affect their own splicing
+##   - utr3 (you can take a guess at why it might bind here)
 cbound <- subset(dt.nova, exon.anno == "cds")
 cbound <- cbound[order(cbound$score, decreasing=TRUE),]
 
@@ -84,6 +97,10 @@ ubound <- subset(dt.nova, exon.anno == "utr3")
 ubound <- ubound[order(ubound$score, decreasing=TRUE),]
 summary(ubound$score[1:500])
 
+## What do binding sites in these different regions look like?
+## Are the peaks different widths?
+## Are their "scores" different?
+
 ## I know I should be using ggplot2, but ...
 ## Does binding in intron vs 3'utr look different?
 plot.densities(trim.data(cbound$width, 0.05),
@@ -92,19 +109,58 @@ plot.densities(trim.data(cbound$width, 0.05),
                legend=c('cds', 'intron', 'utr3'),
                main="Binding widths")
 
-## How about their scores?
+## !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+## This is why you usually want to start w/ the raw reads your self
+## and process it in a way that makes sense -- or at least in a way
+## that makes sense to you.
+
+## What does their score distribution look like?
 plot.densities(trim.data(cbound$score, 0.05),
                trim.data(ibound$score, 0.05),
                trim.data(ubound$score, 0.05),
                legend=c('cds', 'intron', 'utr3'),
                main="Score distro")
+## Wonderful -- what's up with intronic binding sites?
+## We may never know
 
+################################################################################
+## OK, let's take a closer look at what intronic binding events look like
+
+## Lets get some "good" peaks that land in introns
 ipos <- subset(ibound, width > 20 & width < 100 & score > 10)
+
+## where are NOVA binding sites located in the intron? Are they biased
+## towards the start? end? random?
+igr <- as(ipos, "GRanges")
+ihost <- subsetByOverlaps()
+##
+ds.intron <- precede(igr, ag.mm9)
+ds.igr <- ag.mm9[ds.intron]
+barplot(table(values(ds.igr)$exon.anno), las=2)
+
+## How is an exon that is downstream from an intron labeled 5'utr?
+ii <- cbind(ipos, as(ds.igr, 'data.table'))
+subset(ii, exon.anno.1 == 'utr5')
+## Oh, that makes sense ... transcriptomics is fun!
+
+
+
+
 cpos <- subset(cbound, width > 20 & width < 100 & score > 10)
-pos <- as(rbind(ipos, cpos), "GRanges")
+cgr <- as(cpos, "GRanges")
+
+apos <- rbind(ipos, cpos)
+pos <- as(apos, "GRanges")
 posdna <- getSeq(Mmusculus, pos)
 
+
+
+ds.gr <- ag.mm9[ds.exon]
+
+
 gexpr <- dt.nova$entrez.id
+
+
 ineg <-
 ################################################################################
 ## dm3
