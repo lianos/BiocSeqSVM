@@ -152,6 +152,7 @@ y <- c(rep(1, length(icansplice.dna)), rep(-1, length(neg.dna)))
 ## C.neg and C are swapped in shikken now (bug) -- wil fix!
 ## This training take a long time
 m <- SVM(X, y, kernel="spectrum", degree=4, C.neg=100000, C=10, threads=2)
+
 ## Some sequences have N -- this is illegal, The index of these
 ## sequences have been returned to m
 
@@ -265,7 +266,7 @@ no.dex <- no.dex[countOverlaps(no.dex, dex.gr) == 0]
 # if (FALSE) {
 #   ag.mm9 <- readRDS('~/cBio/projects/TagSeq/inst/extdata/annotated.genome.mm9.rds')
 #   ag.dm3 <- readRDS('/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene/cache/annotated.chromosomes/annotated.collapse-cover.up-500.down-5000.cds-cover-max.rds')
-# 
+#
 #   ## dm3 is duplicated!
 #   if (FALSE) {
 #     dt <- as(ag.dm3, 'data.table')
@@ -274,49 +275,49 @@ no.dex <- no.dex[countOverlaps(no.dex, dex.gr) == 0]
 #     ag.dm3 <- as(u, 'GRanges')
 #     saveRDS(ag.dm3, '/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene/cache/annotated.chromosomes/annotated.collapse-cover.up-500.down-5000.cds-cover-max.rds')
 #   }
-# 
+#
 #   ## dm.exons
 #   ## load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/Dmel.DEXSeq.exons.rda')
-# 
+#
 #   ## nova.peaks
 #   load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/NOVA.mm9.rda')
-# 
+#
 #   ## p.counts, dm.exons
 #   load('/Users/stavros/cBio/bioc/BiocSeqSVM/data/pasillaData.rda')
-# 
+#
 #   dex <- read.table('/Users/stavros/cBio/bioc/BiocSeqSVM/data/ps.diff-exons-some.txt',
 #                     stringsAsFactors=FALSE, header=TRUE, sep="\t")
-# 
-# 
+#
+#
 #   library(GenomicCache)
 #   library(SeqTools)
 #   gcm <- GenomicCache("/Users/stavros/cBio/projects/GenomicCache/GenomicCache.mm9.knownGene")
 #   gcd <- GenomicCache('/Users/stavros/cBio/projects/GenomicCache/GenomicCache.dm3.ensGene')
 #   n1 <- GFGene("Nova1", gcm)
 #   n2 <- GFGene("Nova2", gcm)
-# 
+#
 #   dl('seqstore')
-# 
+#
 #   bams <- c(wt1='/Users/stavros/cBio/bioc/data/pasilla/untreated-1/tophat_out/accepted_hits.bam',
 #             wt2='/Users/stavros/cBio/bioc/data/pasilla/untreated-4/tophat_out/accepted_hits.bam',
 #             ps1='/Users/stavros/cBio/bioc/data/pasilla/ps-si-1/tophat_out/accepted_hits.bam')
 #   bams <- as.list(bams)
 #   bams <- lapply(bams, BamFile)
-# 
+#
 #   ## Fly
 #   ## http://www-huber.embl.de/pub/DEXSeq/psfb/testForDEU.html
 #   tenm <- GFGene("Ten-m", gcd) ## exon 7: ~ 22362702
 #   tranges <- ag.mm9[values(ag.mm9)$symbol == "Ten-m"]
 #   br <- GFGene("br", gcd) ## exon 12 1537033 chrX [1531317, 1531367]
 # }
-# 
+#
 # ################################################################################
 # ## AMI setup
 # if (FALSE) {
 #   # ag.mm9 <- readRDS('/home/steve/ml-data/annotated.genome.mm9.rds')
 #   # ## ag.dm3 <- readRDS('/home/steve/ml-data/annotated.genome.dm3.rds')
 #   # base <- 'http://cbio.mskcc.org/~lianos/files/bioc2012'
-#   # 
+#   #
 #   # fetch <- c('Dmel.DEXSeq.exons.rda',
 #   #            'NOVA.mm9.rda',  ## nova.peaks
 #   #            'pasillaData.rda', ## dm.exons
@@ -328,7 +329,7 @@ no.dex <- no.dex[countOverlaps(no.dex, dex.gr) == 0]
 #   #   }
 #   # }
 #   # ag.dm3 <- readRDS('dm3.anno.rds')
-#   # 
+#   #
 #   # dex <- system.file("data", "ps.diff-exons.txt", package="BiocSeqSVM")
 # }
-# 
+#
