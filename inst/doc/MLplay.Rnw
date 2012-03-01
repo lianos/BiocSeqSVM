@@ -490,20 +490,6 @@ X3d <- t(X3d)
 ##        xlab='', ylab='', zlab='')
 @
 
-
-\begin{figure}[htbp]
-  \centering  
-  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-circleData}}\quad
-  \subfigure{\includegraphics[width=3in]{figs/poly-circle-3d.png} }}
-  \caption{
-    Separating seemingly inseparable data by projecting it into a higher
-    dimension. The data on the left is projected into three dimensions
-    on the right by transforming each $(x,y)$ point to
-    $(x^2, \sqrt{2} x y, y^2)$
-  }
-  \label{fig:circledata}
-\end{figure}
-
 One approach you might take is to define a function 
 that projects ${\bf x}$ into a higher dimensional and try to find
 a separating hyperplane (line) in that space.
@@ -524,6 +510,18 @@ vector would then  also be living in this higher dimensional space
 and your new discriminant function would look like what is shown in
 Equation~\ref{eqn:phidisc}. 
 
+\begin{figure}[htbp]
+  \centering  
+  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-circleData}}\quad
+  \subfigure{\includegraphics[width=3in]{figs/poly-circle-3d.png} }}
+  \caption{
+    Separating seemingly inseparable data by projecting it into a higher
+    dimension. The data on the left is projected into three dimensions
+    on the right by transforming each $(x,y)$ point to
+    $(x^2, \sqrt{2} x y, y^2)$
+  }
+  \label{fig:circledata}
+\end{figure}
 
 There is a smarter way to go, and it involves using kernels and
 ``the kernel trick''. You can think of a kernel function
@@ -576,7 +574,7 @@ $\alpha_i > 0$ --- these examples are called the \emph{support vectors} and lie 
 \begin{itemize}
   \item We can use kernels to calculate similarities between two objects
         by implicitly mapping them to different feature spaces.
-  \item The SVM can be solved using this implicit mapping (Equation~\ref{eqn:dual}), 
+  \item The dual of the SVM can be solved in this implicit mapping (Equation~\ref{eqn:dual}), 
         which means you can work in, say, a $50,000$ dimensional space without having
         to explicitly generate feature vectors of $50,000$ dimensions for all of your
         data points
