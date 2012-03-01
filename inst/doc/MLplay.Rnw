@@ -180,13 +180,13 @@ corners of your data..
   machine learning concepts. In particular, you will find very little time spent
   on discussing concepts such as cross validation, which is a \emph{crucial} step in
   assessing the performance and general utility of any machine learning algorithm.
-  In this tutorial, more time is spent showing how support vector machines 
-  (and different kernels) work, and how changing their parameters can affect the
-  behavior of the algorithm. It can't be stressed enough that proper parameter
-  tuning and model assessment (through cross validation, for instance) is
-  \emph{absolutely essential}, even if it is only paid lip service here. In my
-  opinion, once one gains a thorough understanding of the algorithms being used,
-  applying something like cross validation should be quite trivial.
+  I am choosing to focus on presenting the nitty/gritty details of how a support
+  vector machine and different kernel functions work in an interactive and
+  intuitive manner. My hope is that in doing so, the reader will be better
+  able to apply and tune it to the particular problem at hand.
+  It can't be stressed enough that proper parameter model assessment
+  (through cross validation, for instance) is \emph{absolutely essential}, when
+  attempting to apply predictive modeling techniques in ``the real world.''
   
   For further ML references, especially in the context of \texttt{R} and bioconductor,
   the reader might be interested in the following resources:
@@ -198,13 +198,13 @@ corners of your data..
   
   \item We will be exploring support vector machines through a new R library
   I am authoring called \href{https://gihub.com/lianos/shikken}{shikken}.
-  Shikken is a wrapper to the
-  \href{http://www.shogun-toolbox.org/}{Shogun machine learning toolbox}.
-  a \texttt{C++} library focussed on large scale kernel methods. Shogun
+  Shikken is a wrapper to the excellent
+  \href{http://www.shogun-toolbox.org/}{Shogun machine learning toolbox}, which
+  is a \texttt{C++} library focussed on large scale kernel methods. Shogun
   has the largest variety of SVM solvers and kernel methods I have encountered
   in one package. It also has a focus on kernel methods that are useful in
   biology --- particularly ones that work on sequence features. My hope is that
-  being able to access Shogun's functionality through shikken will be helpful
+  exposing Shogun's functionality through shikken will be helpful
   since it provides an interface to Shogun that an \texttt{R} user will likely be
   more comfortable with. See Section~\ref{sec:shogun} for more information about how
   to use shikken effectively (ie. what bugs you should be looking out for!).
@@ -222,17 +222,37 @@ Yet another introduction to SVMs in the context of computational biology can
 be found here~\cite{Noble:2006br}]
 
 The Support Vector Machine (SVM) is a versatile and state-of-the-art classifier
-that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}.
-As shown in Figure~\ref{fig:svmdecision}, an advantageous property of the SVM,
-is that it creates a large margin linear classifier that, typically, lives in high
-dimensional spaces. The margin of a classifier is simply defined as the shortest
-distance from the decision boundary to the first training example (that is not
-actively being ignored!). Large margin classifiers have the tendency to
+that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}. Put
+simply, in a two-class classification setting, the SVM finds ``the best''
+separating hyperplane ${\bf w}$ that separates the data points in each
+class from each other, as shown in Figure~\ref{fig:svmdecision}. Once ${\bf w}$
+is found, a point ${\bf x}_i$ is classified by \emph{the sign} of the 
+described function $f(x)$, shown in Equation~\ref{eqn:primaldiscriminant}.
+
+\begin{align}
+  f(x_i) = {\bf w} \cdot {\bf x}_i + b
+\label{eqn:primaldiscriminant}
+\end{align} 
+
+An advantageous property of the SVM, is that it finds the separating hyperplane
+with the largest margin (subject to constraints set by the user).
+The margin of a classifier is simply defined as the shortest
+distance from the decision boundary to the first training example.
+Compare the separating hyperplanes in
+Figures~\ref{fig:svmdecision}A and B. The decision boundaries on the left
+each split the data points from each other, but the boundary found by the SVM
+(right) has maximal distance between the points from either class
+(ignoring the red example, for now). The smallest distance between
+the decision boundary and the closest example is known as \emph{the margin},
+and is depicted by the blue line segment in Figure~\ref{fig:svmdecision}B.
+Large margin classifiers have the tendency to
 generalize well to unseen data --- intuitively because they provide more
 ``breathing room'' between the decision boundary and the next unseen data point
-you want to classify. The SVM finds the optimal decision boundary by minimizing
+you want to classify.
+
+The SVM finds the decision boundary with the largest margin by minimizing
 $\| {\bf w} \|^2$ in the convex optimization problem shown in
-Equation~\ref{eqn:primal}, and depicted in Figure~\ref{fig:svmdecision}.
+Equation~\ref{eqn:primal}.
 
 \begin{align}
   \min_{ {\bf w}, b, \xi} \mbox{ } \frac {1} {2} \| {\bf w} \|^2 + C \sum_{i=1}^n \xi_i \nonumber \\
@@ -273,7 +293,8 @@ The slack variables permit examples to lie within the margin or to be
 misclassified while still finding a large margin over the rest of the training
 data. To discourage excess use of slack variables, a cost parameter
 $C$ is also introduced. When training an SVM, it is important to identify the
-best value for $C$ given the data you have available to you. We will briefly
+best value for $C$ given the data you have available to you --- this can be
+done through cross validation. We will briefly
 explain how to do this later in Section~\ref{sec:model_refinement}.
 
 \paragraph{Basic SVMs in R}
@@ -305,8 +326,18 @@ y <- rep(c(1, -1), each=N)
 @
 
 To use an SVM to clasify a dataset, shikken provides the \texttt{SVM}
-method which accepts a dataset \texttt{x} of observations (rows), and
-a label vector \texttt{y}. The \texttt{C} parameter is the same $C$
+method which accepts a dataset \texttt{x} of observations and labels
+\texttt{y}. \texttt{x} will typically be a 2D matrix where the rows are
+the different observations and the columns are the values of the different
+features of your data). In the classification setting
+(two- or multi-class), the label vector \texttt{y} can be a factor
+or numeric vector indicating which class each example
+belongs to~\footnote{
+ In the two class setting, the values in the label vector must consist
+ of only ${-1,1}$.
+ In the multiclass setting, the labels are integers $[0,n]$ where
+ $n$ is one less than the number of classes in your dataset.
+}. The \texttt{C} parameter is the same $C$
 described in Formula~\ref{eqn:primal}, ie. the cost for non-zero
 slack variables.
 
@@ -325,9 +356,16 @@ boundary is located at the $z=0$ contour. The points in red are the
 examples that serve as the support vectors --- note how these examples
 orient the decision boundary. As examples get further and further away
 from the decision boundary, their decision values get increasingly higher.
-When the SVM produces a high (absolute) decision value, you can think of
-it as giving a high-confidence prediction of the class label. Positive
-decision values belong to one class, negative values belong to the other.
+When the SVM produces a high (absolute) decision value for an example
+(computed by Equation~\ref{eqn:primaldiscriminant}), you can think of
+it as giving a high-confidence prediction of the class label since it
+is further from the decision boundary~\footnote{
+  I've found that there are many parallels between things that emerge
+  from the math in different machine learning algorithms I've sorted
+  through and different existential aspects of life. In this particular
+  case, just keep in mind that someone can be extremely confident in
+  something they say, but still be wrong!
+}.
 
 \paragraph{Question}
 \emph{What happens to the decision boundary and support vectors
@@ -384,9 +422,9 @@ plotDecisionSurface(lsvm, X.out, y.out)
     much left up to interpretation as to whether or not the SVM can finds
     the best separating hyperplane that has the largest margin. In the
     example on the right, imagine we observed an outlier in our set of
-    positively labeled data. Trying to fit the hyperplane to classify that
+    negatively labeled data. Trying to fit the hyperplane to classify that
     example will severely skew the decision boundary and rotate it to the
-    right, as we saw in the example code when $C=100$. Setting $C = 0.5$
+    right --- reducing the size of the margin. Setting $C = 0.5$
     allows us to recover a classifier with a larger margin by allowing the
     SVM ``enough slack'' to misclassify the ``outlier'' (shown on right).
   }
@@ -403,11 +441,11 @@ plotDecisionSurface(lsvm, X.out, y.out)
 As we saw in the previous example, not all data is well behaved --- it is not
 always easy to find a linear separator that can split your two classes
 of data. Still, the challenge of dealing with outliers was one that the SVM
-seemed to handle quite easily. But what happens if your data is really
-impossible to split, as shown in the code below and in Figure~\ref{fig:circledata}?
+seemed to handle quite easily. But what if our data looks like this:
 
 <<label=circleData,fig=TRUE,include=FALSE>>=
 ## The guts of makeCircle taken from plotrix package
+set.seed(123)
 Xcircle <- makeCircle(0, 0, 5, nv=100)
 Xcircle <- cbind(Xcircle$x, Xcircle$y)
 Xinside <- matrix(rnorm(200), ncol=2)
@@ -418,33 +456,74 @@ yc <- rep(c(1, -1), each=100)
 simplePlot(Xc, yc)
 @
 
+How can we find a line that splits the data shown on the left of
+Figure~\ref{fig:circledata} cleanly? An approach one could use is to define a
+function $\phi({\bf x})$ that projects ${\bf x}$ into a higher dimensional
+space and then try to find a line (hyperplane) its new space.
+
+For this example, let's define
+$\phi({\bf x}) = (x_1^2, \sqrt{2} x_1 x_2, x_2^2)$, which transforms ${\bf x}$
+into a vector of all degree-2 monomials, embedding our two dimensional
+${\bf x}$ into three dimensional space. The ${\bf w}$ we find will now live
+in this three dimensional space and the discriminant function in this new
+space is shown in Equation~\ref{eqn:phidisc}.
+
+\begin{align}
+  f(x) = \left\langle {\bf w}, \phi ({\bf x}) \right\rangle + b
+\label{eqn:phidisc}
+\end{align}
+
+<<label=polyProject,fig=TRUE,include=FALSE>>=
+phi <- function(x) {
+  c(x[1]^2, sqrt(2) * x[1] * x[2], x[2]^2)
+}
+
+X3d <- apply(Xc, 1, phi)
+X3d <- t(X3d)
+
+## The following plotting code required the rgl package
+## so it is not run -- it has been previously saved in
+## the figs/poly-circle-3d.png file
+## library(rgl)
+## cols <- c(rep('blue', nrow(Xinside)), rep('red', nrow(Xinside)))
+## plot3d(X3d[,1], X3d[,2], X3d[,3], col=cols,
+##        xlab='', ylab='', zlab='')
+@
+
+
 \begin{figure}[htbp]
-  \centering
-    \includegraphics[scale=.1]{Rfigs/gen-circleData}
-  \caption{How can you separate this with a linear classifier?}
+  \centering  
+  \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-circleData}}\quad
+  \subfigure{\includegraphics[width=3in]{figs/poly-circle-3d.png} }}
+  \caption{
+    Separating seemingly inseparable data by projecting it into a higher
+    dimension. The data on the left is projected into three dimensions
+    on the right by transforming each $(x,y)$ point to
+    $(x^2, \sqrt{2} x y, y^2)$
+  }
   \label{fig:circledata}
 \end{figure}
 
+One approach you might take is to define a function 
+that projects ${\bf x}$ into a higher dimensional and try to find
+a separating hyperplane (line) in that space.
 A reasonable way to split the data in Figure~\ref{fig:circledata}
-with a linear classifier is to first project it into a higher
-dimensional space, then find the hyperplane that can separate
+with a linear classifier is to define a function 
+that projects  into a higher dimensional space. One could
+then find the hyperplane that can separate
 the data in this new space. A ``simple''\footnote{
   ``Simple'' is in quotes here, because this
   is ``simple'' to think about, but if you are working with thousands
   (or millions) of data points, and you want to project them into
   a $50,000$ dimensional space, the ``simple'' task of just holding
   all of this data in memory isn't so simple anymore.
-} way to do this is to
+} way to do this is to first 
 explicitly project every data point into the new space and then
 find the hyperplane like ``you normally would.'' Your ${\bf w}$
 vector would then  also be living in this higher dimensional space
-and your new discriminant function would then look like what is shown in
+and your new discriminant function would look like what is shown in
 Equation~\ref{eqn:phidisc}. 
 
-\begin{align}
-  f(x) = \left\langle {\bf w}, \phi ({\bf x}) \right\rangle + b
-\label{eqn:phidisc}
-\end{align}
 
 There is a smarter way to go, and it involves using kernels and
 ``the kernel trick''. You can think of a kernel function
@@ -481,7 +560,7 @@ expressed solely as a function over the examples ${\bf x}_i$ and their optimal v
 \end{align}
 
 Using the kernel trick we can rewrite our discriminant function from
-Equation~\ref{eqn:wvector} to:
+$f(x) = {\bf x} \cdot x + b$ Equation~\ref{eqn:wvector} to:
 
 \begin{align}
   f({\bf x}) = \sum_{i=1}^n y_i \alpha_i k({\bf x}_i, {\bf x}) + b
