@@ -2,11 +2,19 @@ This package serves as a quick introduction to the application of some
 machine learning concepts to next generation sequencing data, which you will
 find outlined in the MLplay vignette.
 
+                  THE MLplay VIGNETTE IS CURRENTLY INCOMPLETE
+
+                      Editing up through to the end of the 
+              "Kernels (and the dual of the SVM)" section is almost
+                      complete, so you can work you way through that.
+
 I initially put this together for one of the tutorials to be presented at
 the Advanced R/Bioconductor Workshop on High-Throughput Genetic Analysis,
 2012:
 
     https://secure.bioconductor.org/SeattleFeb12/
+
+The vignette used during the presentation is found in inst/doc/MLplay.Rnw
 
 Accept where otherwise noted, the contents of this package are released under
 the Creative Commons Attribution-ShareAlike (v3.0) license:

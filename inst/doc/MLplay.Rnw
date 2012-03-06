@@ -105,6 +105,9 @@
 
 \maketitle
 
+\begin{center}
+  \textbf{THIS VIGNETTE IS CURRENTLY UNDER CONSTRUCTION}
+\end{center}
 The goal of this tutorial is to provide a brief and intuitive introduction to
 some machine learning techniques --- primarily support vector machines. Some
 mathematical rigor will likely be sacrificed in order to appeal to intuition.
@@ -302,8 +305,7 @@ explain how to do this later in Section~\ref{sec:model_refinement}.
 
 Let's fire up \texttt{R} and create a dataset that almost looks like that data in
 Figure~\ref{fig:svmdecision} so we can see how to classify it using the
-SVM methods available in shikken
-\footnote{
+SVM methods available in shikken~\footnote{
   You can also use SVMs in \textbf{R} with the \texttt{e1071} and \texttt{kernlab}
   packages. \texttt{kernlab} also has an implementation of the spectrum kernel
   you can use.
@@ -457,9 +459,17 @@ simplePlot(Xc, yc)
 @
 
 How can we find a line that splits the data shown on the left of
-Figure~\ref{fig:circledata} cleanly? An approach one could use is to define a
-function $\phi({\bf x})$ that projects ${\bf x}$ into a higher dimensional
-space and then try to find a line (hyperplane) its new space.
+Figure~\ref{fig:circledata} cleanly? A ``simple''~\footnote{
+  ``Simple'' is in quotes here because this
+  is ``simple'' to think about but can be difficult to do in practice.
+  Imagine working with thousands (or millions) of data points, and you
+  want to project them into a $50,000$ dimensional space, the
+  ``simple'' task of just holding all of this data in memory isn't
+  so simple anymore.
+} approach one could use is to
+define a function $\phi({\bf x})$ that we can use to first project every
+example ${\bf x}$ into a higher dimensional space and then try to find a line
+(hyperplane) that splits the two samples in this new space.
 
 For this example, let's define
 $\phi({\bf x}) = (x_1^2, \sqrt{2} x_1 x_2, x_2^2)$, which transforms ${\bf x}$
@@ -489,26 +499,6 @@ X3d <- t(X3d)
 ## plot3d(X3d[,1], X3d[,2], X3d[,3], col=cols,
 ##        xlab='', ylab='', zlab='')
 @
-
-One approach you might take is to define a function 
-that projects ${\bf x}$ into a higher dimensional and try to find
-a separating hyperplane (line) in that space.
-A reasonable way to split the data in Figure~\ref{fig:circledata}
-with a linear classifier is to define a function 
-that projects  into a higher dimensional space. One could
-then find the hyperplane that can separate
-the data in this new space. A ``simple''\footnote{
-  ``Simple'' is in quotes here, because this
-  is ``simple'' to think about, but if you are working with thousands
-  (or millions) of data points, and you want to project them into
-  a $50,000$ dimensional space, the ``simple'' task of just holding
-  all of this data in memory isn't so simple anymore.
-} way to do this is to first 
-explicitly project every data point into the new space and then
-find the hyperplane like ``you normally would.'' Your ${\bf w}$
-vector would then  also be living in this higher dimensional space
-and your new discriminant function would look like what is shown in
-Equation~\ref{eqn:phidisc}. 
 
 \begin{figure}[htbp]
   \centering  
@@ -668,6 +658,10 @@ plotDecisionSurface(gsvm, Xc, yc, wireframe=TRUE)
 \section{Classification on strings using the spectrum kernel}
 \label{sec:spectrum}
 
+\begin{center}
+  \textbf{THIS SECTION IS VERY INCOMPLETE}
+\end{center}
+
 How do we project strings into a multi-dimensional space?
 
 %% ============================================================================
@@ -710,8 +704,7 @@ $u$ in the string $x$ and $\Sigma^d$ is the set of all words of length $d$. An i
 
 To be a bit more clea\texttt{R}, using \texttt{Biostrings} we can explicitly compute
 the feature space for a set of \texttt{XStringSet} objects $X$ used by the spectrum
-kerenl of degree $d$ via a call to \texttt{ol} , a call to
-\texttt{oligonucleotideFrequency(X, d)}.
+kerenl of degree $d$ via a call to \texttt{oligonucleotideFrequency(X, d)}.
 
 As an example of how to use the spectrum kernel, we'll use the ``promoter gene
 sequences'' dataset from the UCI machine learning repository. This dataset has a
@@ -730,7 +723,6 @@ table(predict(m, promoters), y)
 @
 
 \emph{Exercise: How long do the kmers have to be to build a strong classifier?}
-
 
 It is clear that we can classify the promoters correctly using a spectrum
 kernel of degree four. While building an accurate classifier is sometimes
@@ -876,7 +868,8 @@ of the two sequences being compared.
     Given two sequences $x_1$ and $x_2$ of equal length, the kernel
     computes a weighted sum of matching subsequences. Each matching
     subsequence makes a contribution $w_B$ depending on its length $B$,
-    where longer matches contribute more significantly.}
+    where longer matches contribute more significantly.} Figure
+    taken from~\cite{Sonnenburg:2007wu}
   \label{fig:WDK}
 \end{figure}
 
@@ -902,7 +895,8 @@ kernels.
     Given two sequences $x_1$ and $x_2$ of equal length, the WDS kernel produces
     a weighted sum to which each match in the sequences makes a contribution
     $\gamma_{k,p}$ depending on its length $k$ and relative position $p$, where
-    longer matches at the same position contribute more significantly.
+    longer matches at the same position contribute more significantly. Figure
+    taken from~\cite{Sonnenburg:2007wu}
   }
   \label{fig:WDKS}
 \end{figure}
