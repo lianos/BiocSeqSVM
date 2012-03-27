@@ -190,15 +190,15 @@ corners of your data..
   It can't be stressed enough that proper parameter model assessment
   (through cross validation, for instance) is \emph{absolutely essential}, when
   attempting to apply predictive modeling techniques in ``the real world.''
-  
+
   For further ML references, especially in the context of \texttt{R} and bioconductor,
   the reader might be interested in the following resources:
-  
+
   \begin{itemize}
     \item The \href{http://www.bioconductor.org/help/course-materials/2011/CSAMA/}{CSAMA 2011 workshop, machine learning primer}, by Vincent Carey.
     \item The \href{http://cran.r-project.org/web/packages/kernlab/}{vignette from the caret package}, by Max Kuhn.
   \end{itemize}
-  
+
   \item We will be exploring support vector machines through a new R library
   I am authoring called \href{https://gihub.com/lianos/shikken}{shikken}.
   Shikken is a wrapper to the excellent
@@ -229,13 +229,13 @@ that was first introduced by Boser, Guyon and Vapnik~\cite{Boser:1992uo}. Put
 simply, in a two-class classification setting, the SVM finds ``the best''
 separating hyperplane ${\bf w}$ that separates the data points in each
 class from each other, as shown in Figure~\ref{fig:svmdecision}. Once ${\bf w}$
-is found, a point ${\bf x}_i$ is classified by \emph{the sign} of the 
+is found, a point ${\bf x}_i$ is classified by \emph{the sign} of the
 described function $f(x)$, shown in Equation~\ref{eqn:primaldiscriminant}.
 
 \begin{align}
   f(x_i) = {\bf w} \cdot {\bf x}_i + b
 \label{eqn:primaldiscriminant}
-\end{align} 
+\end{align}
 
 An advantageous property of the SVM, is that it finds the separating hyperplane
 with the largest margin (subject to constraints set by the user).
@@ -310,10 +310,9 @@ SVM methods available in shikken~\footnote{
   packages. \texttt{kernlab} also has an implementation of the spectrum kernel
   you can use.
 }.
- 
+
 <<initialize, results=hide, echo=TRUE, eval=TRUE>>=
 library(BiocSeqSVM)
-library(shikken)
 
 ## Create two class data
 set.seed(123)
@@ -348,7 +347,13 @@ lsvm <- SVM(X, y, C=100)
 plotDecisionSurface(lsvm, X, y)
 
 ## Does it accurately classify the data?
-table(predict(lsvm, X), y)
+preds <- predict(lsvm, X)
+accuracy <- (sum(preds == y) / length(y)) * 100
+
+cat(sprintf("Accuracy: %.2f%%\n", accuracy))
+
+## Also can show accuracy with a confusion matrix:
+table(preds, y)
 @
 
 The \texttt{plotDecisionSurface} function draws the data points
@@ -394,6 +399,8 @@ closer to our negative data than the positive data.
 X.out <- rbind(X, t(c(-1, -0.5)))
 y.out <- c(y, -1)
 
+simplePlot(X.out, y.out)
+
 lsvm <- SVM(X.out, y.out, C=100)
 plotDecisionSurface(lsvm, X.out, y.out)
 
@@ -415,7 +422,7 @@ plotDecisionSurface(lsvm, X.out, y.out)
 @
 
 \begin{figure}[htbp]
-  \centering  
+  \centering
   \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-easyMargin.pdf}}\quad
   \subfigure{\includegraphics[width=3in]{Rfigs/gen-easySoftMargin.pdf} }}
   \caption{
@@ -501,7 +508,7 @@ X3d <- t(X3d)
 @
 
 \begin{figure}[htbp]
-  \centering  
+  \centering
   \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-circleData}}\quad
   \subfigure{\includegraphics[width=3in]{figs/poly-circle-3d.png} }}
   \caption{
@@ -523,7 +530,7 @@ Now we have to travel into the weeds a bit ...
 
 There is a \emph{dual} formulation of the SVM objective function that
 uses Lagrange multipliers to make the optimization problem of the \emph{primal}
-(Equation~\ref{eqn:prmial}) easier to solve (apparently!).
+(Equation~\ref{eqn:primal}) easier to solve (apparently!).
 Its optimal value is the same as the primal one under certain
 constraints\cite{BenHur:2008ec}. To help keep
 our sanity, the derivation of the dual from the primal is skipped here,
@@ -535,12 +542,13 @@ Equation~\ref{eqn:dual}.
 
 \begin{align}
   \max_a \sum_{i=1}^n \alpha_i - \frac {1} {2} \sum_{i=1}^n \sum_{j=1}^n y_i y_j \alpha_i \alpha_j \left\langle {\bf x}_i, {\bf x}_j \right\rangle \nonumber  \\
+  = \max_a \sum_{i=1}^n \alpha_i - \frac {1} {2} \sum_{i=1}^n \sum_{j=1}^n y_i y_j \alpha_i \alpha_j k \left( {\bf x}_i, {\bf x}_j \right) \nonumber  \\
   \mbox{s.t : } \sum_{i=1}^n y_i \alpha_i = 0; \mbox{ and } 0 \leq a_o \leq C
 \label{eqn:dual}
 \end{align}
 
 It can also be shown that the weight vector ${\bf w}$ can be
-expressed solely as a function over the examples ${\bf x}_i$ and their optimal values of $\alpha_i$ (found in Equation~\ref{eqn:dual}), as shown in Equation~\ref{eqn:wvector}.
+expressed solely as a function over the examples ${\bf x}_i$ and their optimal values of $\alpha_i$, as shown in Equation~\ref{eqn:wvector}.
 
 \begin{align}
   {\bf w} = \sum_{i=1}^n y_i \alpha_i {\bf x}_i
@@ -548,7 +556,9 @@ expressed solely as a function over the examples ${\bf x}_i$ and their optimal v
 \end{align}
 
 Using the kernel trick we can rewrite our discriminant function from
-$f(x) = {\bf x} \cdot x + b$ Equation~\ref{eqn:wvector} to:
+Equation~\ref{eqn:primaldiscriminant}
+% $f(x) = {\bf x} \cdot x + b$
+to the form shown in Equation~\ref{eqn:wkernel}. Note that the solution to the dual and calculating the objective function only involve evaluating the kernel function over pairs of examples. If we have a sufficiently clever implementation of the kernel function, we can avoid having to explicitly embed our data into its higher dimensional space.
 
 \begin{align}
   f({\bf x}) = \sum_{i=1}^n y_i \alpha_i k({\bf x}_i, {\bf x}) + b
@@ -563,11 +573,11 @@ $\alpha_i > 0$ --- these examples are called the \emph{support vectors} and lie 
 \paragraph{Important take away from the dual and kernels}
 \begin{itemize}
   \item We can use kernels to calculate similarities between two objects
-        by implicitly mapping them to different feature spaces.
-  \item The dual of the SVM can be solved in this implicit mapping (Equation~\ref{eqn:dual}), 
-        which means you can work in, say, a $50,000$ dimensional space without having
-        to explicitly generate feature vectors of $50,000$ dimensions for all of your
-        data points
+        by \emph{implicitly} mapping them to different feature spaces.
+  \item The dual of the SVM can be solved in this implicit mapping
+        (Equation~\ref{eqn:dual}), which means you can work in, say, a $50,000$
+        dimensional space without having to explicitly generate feature vectors
+        of $50,000$ dimensions for all of your data points
   \item The decision boundary of the SVM has a sparse representation which only
         relies on the $\alpha_i$ values from your support vectors, and the support
         vectors themselves, which you keep in their ``native'' (lower dimensional)
@@ -606,7 +616,7 @@ plotDecisionSurface(psvm, Xc, yc, wireframe=TRUE)
 @
 
 \begin{figure}[htbp]
-  \centering  
+  \centering
   \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-svmPoly.pdf}}\quad
   \subfigure{\includegraphics[width=3in]{Rfigs/gen-svmPoly3D.pdf} }}
   \caption{
@@ -640,7 +650,7 @@ plotDecisionSurface(gsvm, Xc, yc, wireframe=TRUE)
 @
 
 \begin{figure}[htbp]
-  \centering  
+  \centering
   \mbox{\subfigure{\includegraphics[width=3in]{Rfigs/gen-svmGaus.pdf}}\quad
   \subfigure{\includegraphics[width=3in]{Rfigs/gen-svmGaus3D.pdf} }}
   \caption{
